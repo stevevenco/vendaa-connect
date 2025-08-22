@@ -9,10 +9,15 @@ import WalletPage from "./pages/Wallet";
 import MetersPage from "./pages/Meters";
 import VendingPage from "./pages/Vending";
 import ReportsPage from "./pages/Reports";
+import SettingsPage from "./pages/Settings";
 import NotFound from "./pages/NotFound";
+import LoginPage from "./pages/Login";
+import SignupPage from "./pages/Signup";
+import ForgotPasswordPage from "./pages/ForgotPassword";
 
 const queryClient = new QueryClient();
 
+// TODO: Add authentication logic to redirect to dashboard if logged in
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -20,12 +25,16 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignupPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/" element={<AppLayout />}>
             <Route index element={<Dashboard />} />
             <Route path="wallet" element={<WalletPage />} />
             <Route path="meters" element={<MetersPage />} />
             <Route path="vending" element={<VendingPage />} />
             <Route path="reports" element={<ReportsPage />} />
+            <Route path="settings" element={<SettingsPage />} />
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
