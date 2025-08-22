@@ -9,6 +9,7 @@ import WalletPage from "./pages/Wallet";
 import MetersPage from "./pages/Meters";
 import VendingPage from "./pages/Vending";
 import ReportsPage from "./pages/Reports";
+import SettingsPage from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import LoginPage from "./pages/Login";
 import SignupPage from "./pages/Signup";
@@ -33,6 +34,7 @@ const App = () => (
             <Route path="meters" element={<MetersPage />} />
             <Route path="vending" element={<VendingPage />} />
             <Route path="reports" element={<ReportsPage />} />
+            <Route path="settings" element={<SettingsPage />} />
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
