@@ -10,9 +10,13 @@ import MetersPage from "./pages/Meters";
 import VendingPage from "./pages/Vending";
 import ReportsPage from "./pages/Reports";
 import NotFound from "./pages/NotFound";
+import LoginPage from "./pages/Login";
+import SignupPage from "./pages/Signup";
+import ForgotPasswordPage from "./pages/ForgotPassword";
 
 const queryClient = new QueryClient();
 
+// TODO: Add authentication logic to redirect to dashboard if logged in
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -20,6 +24,9 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignupPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/" element={<AppLayout />}>
             <Route index element={<Dashboard />} />
             <Route path="wallet" element={<WalletPage />} />
