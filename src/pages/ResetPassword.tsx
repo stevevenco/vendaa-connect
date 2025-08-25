@@ -17,6 +17,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 import { TOtpVerifySchema, OtpVerifySchema } from "@/types";
 import { verifyOtp, requestOtp } from "@/services/api";
 import { useToast } from "@/components/ui/use-toast";
@@ -26,14 +27,14 @@ import {
   InputOTPSlot,
 } from "@/components/ui/input-otp";
 
-export default function VerifyOtpPage() {
+export default function ResetPasswordPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
   const email = location.state?.email;
 
   if (!email) {
-    navigate("/signup");
+    navigate("/forgot-password");
   }
 
   const form = useForm<TOtpVerifySchema>({
@@ -41,7 +42,8 @@ export default function VerifyOtpPage() {
     defaultValues: {
       email,
       otp_code: "",
-      purpose: "signup",
+      purpose: "password_reset",
+      new_password: "",
     },
   });
 
@@ -49,13 +51,13 @@ export default function VerifyOtpPage() {
     try {
       await verifyOtp(data);
       toast({
-        title: "OTP Verification Successful",
-        description: "Your email has been verified. Please login to continue.",
+        title: "Password Reset Successful",
+        description: "Your password has been reset. Please login.",
       });
       navigate("/login");
     } catch (error) {
       toast({
-        title: "Verification Failed",
+        title: "Password Reset Failed",
         description:
           error instanceof Error ? error.message : "An error occurred.",
         variant: "destructive",
@@ -65,7 +67,7 @@ export default function VerifyOtpPage() {
 
   const handleResendOtp = async () => {
     try {
-      await requestOtp({ email, purpose: "signup" });
+      await requestOtp({ email, purpose: "password_reset" });
       toast({
         title: "OTP Resent",
         description: "A new OTP has been sent to your email.",
@@ -84,9 +86,9 @@ export default function VerifyOtpPage() {
     <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-950">
       <Card className="mx-auto max-w-sm">
         <CardHeader>
-          <CardTitle className="text-2xl">Verify OTP</CardTitle>
+          <CardTitle className="text-2xl">Reset Password</CardTitle>
           <CardDescription>
-            Enter the OTP sent to your email address.
+            Enter the OTP sent to your email and your new password.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -114,12 +116,27 @@ export default function VerifyOtpPage() {
                   </FormItem>
                 )}
               />
+              <FormField
+                control={form.control}
+                name="new_password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>New Password</FormLabel>
+                    <FormControl>
+                      <Input type="password" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <Button
                 type="submit"
                 className="w-full"
                 disabled={form.formState.isSubmitting}
               >
-                {form.formState.isSubmitting ? "Verifying..." : "Verify OTP"}
+                {form.formState.isSubmitting
+                  ? "Resetting Password..."
+                  : "Reset Password"}
               </Button>
             </form>
           </Form>
