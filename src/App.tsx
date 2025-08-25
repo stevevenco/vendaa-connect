@@ -14,10 +14,13 @@ import NotFound from "./pages/NotFound";
 import LoginPage from "./pages/Login";
 import SignupPage from "./pages/Signup";
 import ForgotPasswordPage from "./pages/ForgotPassword";
+import ProtectedRoute from "./components/ProtectedRoute";
+import VerifyOtpPage from "./pages/VerifyOtp";
+import AuthCallbackPage from "./pages/AuthCallback";
+import CreateOrganizationPage from "./pages/CreateOrganization";
 
 const queryClient = new QueryClient();
 
-// TODO: Add authentication logic to redirect to dashboard if logged in
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -28,13 +31,21 @@ const App = () => (
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-          <Route path="/" element={<AppLayout />}>
-            <Route index element={<Dashboard />} />
-            <Route path="wallet" element={<WalletPage />} />
-            <Route path="meters" element={<MetersPage />} />
-            <Route path="vending" element={<VendingPage />} />
-            <Route path="reports" element={<ReportsPage />} />
-            <Route path="settings" element={<SettingsPage />} />
+          <Route path="/verify-otp" element={<VerifyOtpPage />} />
+          <Route element={<ProtectedRoute />}>
+            <Route path="/auth-callback" element={<AuthCallbackPage />} />
+            <Route
+              path="/create-organization"
+              element={<CreateOrganizationPage />}
+            />
+            <Route path="/" element={<AppLayout />}>
+              <Route index element={<Dashboard />} />
+              <Route path="wallet" element={<WalletPage />} />
+              <Route path="meters" element={<MetersPage />} />
+              <Route path="vending" element={<VendingPage />} />
+              <Route path="reports" element={<ReportsPage />} />
+              <Route path="settings" element={<SettingsPage />} />
+            </Route>
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
