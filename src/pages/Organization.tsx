@@ -30,7 +30,7 @@ import {
 } from "@/services/api";
 import { useToast } from "@/components/ui/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useOrganization } from "@/context/OrganizationContext";
+import { useOrganizations } from "@/hooks/useOrganizations";
 import {
   Table,
   TableBody,
@@ -50,12 +50,12 @@ import {
 export default function OrganizationPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { activeOrganization } = useOrganization();
+  const { selectedOrganization } = useOrganizations();
 
   const organizationForm = useForm<TUpdateOrganizationSchema>({
     resolver: zodResolver(UpdateOrganizationSchema),
     values: {
-      name: activeOrganization?.name || "",
+      name: selectedOrganization?.name || "",
     },
   });
 
@@ -68,14 +68,14 @@ export default function OrganizationPage() {
   });
 
   const { data: members, isLoading: isLoadingMembers } = useQuery({
-    queryKey: ["members", activeOrganization?.uuid],
-    queryFn: () => getOrganizationMembers(activeOrganization!.uuid),
-    enabled: !!activeOrganization,
+    queryKey: ["members", selectedOrganization?.uuid],
+    queryFn: () => getOrganizationMembers(selectedOrganization!.uuid),
+    enabled: !!selectedOrganization,
   });
 
   const updateOrganizationMutation = useMutation({
     mutationFn: (data: TUpdateOrganizationSchema) =>
-      updateOrganization(activeOrganization!.uuid, data),
+      updateOrganization(selectedOrganization!.uuid, data),
     onSuccess: () => {
       toast({
         title: "Organization Updated",
@@ -95,14 +95,14 @@ export default function OrganizationPage() {
 
   const addMemberMutation = useMutation({
     mutationFn: (data: TAddMemberSchema) =>
-      addOrganizationMember(activeOrganization!.uuid, data),
+      addOrganizationMember(selectedOrganization!.uuid, data),
     onSuccess: () => {
       toast({
         title: "Member Added",
         description: "The new member has been added to the organization.",
       });
       queryClient.invalidateQueries({
-        queryKey: ["members", activeOrganization?.uuid],
+        queryKey: ["members", selectedOrganization?.uuid],
       });
       addMemberForm.reset();
     },
