@@ -7,6 +7,9 @@ import {
   User,
   TCreateOrganizationSchema,
   Organization,
+  TRequestOtpSchema,
+  TUpdateProfileSchema,
+  TChangePasswordSchema,
 } from "@/types";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
@@ -21,7 +24,11 @@ const api = async <T>(
 
   if (!response.ok) {
     const errorData = await response.json();
-    throw new Error(errorData.detail || "API request failed");
+    throw new Error(
+      errorData.detail ||
+        (errorData.non_field_errors && errorData.non_field_errors[0]) ||
+        "API request failed"
+    );
   }
 
   if (response.status === 204) {
@@ -67,8 +74,18 @@ export const register = (
   });
 };
 
+export const requestOtp = (data: TRequestOtpSchema): Promise<void> => {
+  return api<void>("/api/auth/request-otp/", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  });
+};
+
 export const verifyOtp = (data: TOtpVerifySchema): Promise<void> => {
-  return api<void>("/api/v1/auth/otp-verify/", {
+  return api<void>("/api/auth/otp-verify/", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -79,6 +96,20 @@ export const verifyOtp = (data: TOtpVerifySchema): Promise<void> => {
 
 export const getMe = (): Promise<User> => {
   return authApi<User>("/api/v1/auth/me/");
+};
+
+export const updateProfile = (data: TUpdateProfileSchema): Promise<User> => {
+  return authApi<User>("/api/v1/auth/me/update/", {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+};
+
+export const changePassword = (data: TChangePasswordSchema): Promise<void> => {
+  return authApi<void>("/api/v1/auth/change-password/", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
 };
 
 export const createOrganization = (

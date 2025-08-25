@@ -7,11 +7,101 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  TUpdateProfileSchema,
+  UpdateProfileSchema,
+  TChangePasswordSchema,
+  ChangePasswordSchema,
+} from "@/types";
+import { getMe, updateProfile, changePassword } from "@/services/api";
+import { useToast } from "@/components/ui/use-toast";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 export default function SettingsPage() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const { data: user, isLoading } = useQuery({
+    queryKey: ["user"],
+    queryFn: getMe,
+  });
+
+  const profileForm = useForm<TUpdateProfileSchema>({
+    resolver: zodResolver(UpdateProfileSchema),
+    values: {
+      email: user?.email || "",
+      first_name: user?.first_name || "",
+      last_name: user?.last_name || "",
+      phone_number: "",
+    },
+  });
+
+  const passwordForm = useForm<TChangePasswordSchema>({
+    resolver: zodResolver(ChangePasswordSchema),
+    defaultValues: {
+      old_password: "",
+      new_password: "",
+      confirm_password: "",
+    },
+  });
+
+  const updateProfileMutation = useMutation({
+    mutationFn: updateProfile,
+    onSuccess: () => {
+      toast({
+        title: "Profile Updated",
+        description: "Your profile has been updated successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["user"] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description:
+          error instanceof Error ? error.message : "An error occurred.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const changePasswordMutation = useMutation({
+    mutationFn: changePassword,
+    onSuccess: () => {
+      toast({
+        title: "Password Changed",
+        description: "Your password has been changed successfully.",
+      });
+      passwordForm.reset();
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description:
+          error instanceof Error ? error.message : "An error occurred.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const onProfileSubmit = (data: TUpdateProfileSchema) => {
+    updateProfileMutation.mutate(data);
+  };
+
+  const onPasswordSubmit = (data: TChangePasswordSchema) => {
+    changePasswordMutation.mutate(data);
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -24,9 +114,7 @@ export default function SettingsPage() {
       <Tabs defaultValue="profile" className="space-y-4">
         <TabsList>
           <TabsTrigger value="profile">Profile</TabsTrigger>
-          <TabsTrigger value="organization">Organization</TabsTrigger>
-          <TabsTrigger value="users">Users</TabsTrigger>
-          <TabsTrigger value="developer">Developer</TabsTrigger>
+          <TabsTrigger value="password">Password</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile" className="space-y-4">
@@ -37,22 +125,79 @@ export default function SettingsPage() {
                 Update your personal details here.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
-                <Input id="name" defaultValue="John Doe" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" defaultValue="john.doe@technova.com" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number</Label>
-                <Input id="phone" type="tel" defaultValue="+1 234 567 890" />
-              </div>
-              <Button>Update Profile</Button>
+            <CardContent>
+              <Form {...profileForm}>
+                <form
+                  onSubmit={profileForm.handleSubmit(onProfileSubmit)}
+                  className="space-y-4"
+                >
+                  <FormField
+                    control={profileForm.control}
+                    name="first_name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>First Name</FormLabel>
+                        <FormControl>
+                          <Input {...field} disabled={isLoading} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={profileForm.control}
+                    name="last_name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Last Name</FormLabel>
+                        <FormControl>
+                          <Input {...field} disabled={isLoading} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={profileForm.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input type="email" {...field} disabled={isLoading} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                   <FormField
+                    control={profileForm.control}
+                    name="phone_number"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Phone Number</FormLabel>
+                        <FormControl>
+                          <Input type="tel" {...field} disabled={isLoading} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <Button
+                    type="submit"
+                    disabled={updateProfileMutation.isPending}
+                  >
+                    {updateProfileMutation.isPending
+                      ? "Saving..."
+                      : "Save changes"}
+                  </Button>
+                </form>
+              </Form>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="password">
           <Card>
             <CardHeader>
               <CardTitle>Change Password</CardTitle>
@@ -60,70 +205,62 @@ export default function SettingsPage() {
                 Ensure your account is secure with a strong password.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="current-password">Current Password</Label>
-                <Input id="current-password" type="password" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="new-password">New Password</Label>
-                <Input id="new-password" type="password" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="confirm-password">Confirm New Password</Label>
-                <Input id="confirm-password" type="password" />
-              </div>
-              <Button>Change Password</Button>
+            <CardContent>
+              <Form {...passwordForm}>
+                <form
+                  onSubmit={passwordForm.handleSubmit(onPasswordSubmit)}
+                  className="space-y-4"
+                >
+                  <FormField
+                    control={passwordForm.control}
+                    name="old_password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Current Password</FormLabel>
+                        <FormControl>
+                          <Input type="password" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={passwordForm.control}
+                    name="new_password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>New Password</FormLabel>
+                        <FormControl>
+                          <Input type="password" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={passwordForm.control}
+                    name="confirm_password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Confirm New Password</FormLabel>
+                        <FormControl>
+                          <Input type="password" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <Button
+                    type="submit"
+                    disabled={changePasswordMutation.isPending}
+                  >
+                    {changePasswordMutation.isPending
+                      ? "Changing..."
+                      : "Change Password"}
+                  </Button>
+                </form>
+              </Form>
             </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="organization" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Organization Details</CardTitle>
-              <CardDescription>
-                Manage your organization's information.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="org-name">Organization Name</Label>
-                <Input id="org-name" defaultValue="TechNova Solutions" />
-              </div>
-              <div className="space-y-2">
-                <Label>Organization Logo</Label>
-                <div className="flex items-center gap-4">
-                  <Avatar className="h-16 w-16">
-                    <AvatarImage src="/placeholder.svg" alt="Organization Logo" />
-                    <AvatarFallback>TS</AvatarFallback>
-                  </Avatar>
-                  <Input type="file" className="max-w-xs" />
-                </div>
-              </div>
-              <Button>Save Changes</Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="users">
-          <Card>
-            <CardHeader>
-              <CardTitle>Coming Soon</CardTitle>
-              <CardDescription>
-                User management will be available here.
-              </CardDescription>
-            </CardHeader>
-          </Card>
-        </TabsContent>
-        <TabsContent value="developer">
-          <Card>
-            <CardHeader>
-              <CardTitle>Coming Soon</CardTitle>
-              <CardDescription>
-                Developer settings and API key management will be available here.
-              </CardDescription>
-            </CardHeader>
           </Card>
         </TabsContent>
       </Tabs>
