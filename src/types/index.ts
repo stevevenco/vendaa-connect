@@ -113,3 +113,27 @@ export interface User {
   last_name: string;
   organizations: Organization[];
 }
+
+export const UpdateOrganizationSchema = z.object({
+  name: z.string().min(1, {
+    message: "Organization name is required.",
+  }),
+});
+
+export type TUpdateOrganizationSchema = z.infer<
+  typeof UpdateOrganizationSchema
+>;
+
+export interface OrganizationMember {
+  uuid: string;
+  user: User;
+  role: string;
+  joined_at: string;
+}
+
+export const AddMemberSchema = z.object({
+  email: z.string().email(),
+  role: z.enum(["admin", "member"]),
+});
+
+export type TAddMemberSchema = z.infer<typeof AddMemberSchema>;

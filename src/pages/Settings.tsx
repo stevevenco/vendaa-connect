@@ -107,7 +107,7 @@ export default function SettingsPage() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
         <p className="text-muted-foreground">
-          Manage your account and organization settings.
+          Manage your account settings.
         </p>
       </div>
 
@@ -214,7 +214,7 @@ export default function SettingsPage() {
                   <FormField
                     control={passwordForm.control}
                     name="old_password"
-                    render={({ field }) => (
+                    render={({ field })_ => (
                       <FormItem>
                         <FormLabel>Current Password</FormLabel>
                         <FormControl>
