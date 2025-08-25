@@ -5,10 +5,9 @@ import {
   Zap, 
   FileText, 
   Settings, 
-  Users,
-  Router,
   Key,
-  Home
+  Home,
+  Building
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 
@@ -33,8 +32,7 @@ const navigationItems = [
 ];
 
 const managementItems = [
-  { title: "Users", url: "/users", icon: Users },
-  { title: "Communication", url: "/communication", icon: Router },
+  { title: "Organization", url: "/organization", icon: Building },
   { title: "Developer", url: "/developer", icon: Key },
   { title: "Settings", url: "/settings", icon: Settings },
 ];

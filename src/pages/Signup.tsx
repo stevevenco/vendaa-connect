@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { TRegisterSchema, RegisterSchema } from "@/types";
-import { register } from "@/services/api";
+import { register, requestOtp } from "@/services/api";
 import { useToast } from "@/components/ui/use-toast";
 
 export default function SignupPage() {
@@ -39,11 +39,12 @@ export default function SignupPage() {
   const onSubmit = async (data: TRegisterSchema) => {
     try {
       await register(data);
+      await requestOtp({ email: data.email, purpose: "signup" });
       toast({
         title: "Registration Successful",
         description: "An OTP has been sent to your email.",
       });
-      navigate("/verify-otp", { state: { email: data.email, password: data.password } });
+      navigate("/verify-otp", { state: { email: data.email } });
     } catch (error) {
       toast({
         title: "Registration Failed",

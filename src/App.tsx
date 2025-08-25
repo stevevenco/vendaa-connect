@@ -10,6 +10,7 @@ import MetersPage from "./pages/Meters";
 import VendingPage from "./pages/Vending";
 import ReportsPage from "./pages/Reports";
 import SettingsPage from "./pages/Settings";
+import OrganizationPage from "./pages/Organization";
 import NotFound from "./pages/NotFound";
 import LoginPage from "./pages/Login";
 import SignupPage from "./pages/Signup";
@@ -45,6 +46,7 @@ const App = () => (
               <Route path="vending" element={<VendingPage />} />
               <Route path="reports" element={<ReportsPage />} />
               <Route path="settings" element={<SettingsPage />} />
+              <Route path="organization" element={<OrganizationPage />} />
             </Route>
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

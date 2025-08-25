@@ -45,14 +45,51 @@ export interface RegisterResponse {
   last_name: string;
 }
 
+export const RequestOtpSchema = z.object({
+  email: z.string().email({
+    message: "Please enter a valid email address.",
+  }),
+  purpose: z.enum(["signup", "password_reset"]),
+});
+
+export type TRequestOtpSchema = z.infer<typeof RequestOtpSchema>;
+
 export const OtpVerifySchema = z.object({
+  email: z.string().email(),
   otp_code: z.string().min(6, {
     message: "OTP must be 6 characters long.",
   }),
-  purpose: z.string().default("signup"),
+  purpose: z.enum(["signup", "password_reset"]),
+  new_password: z.string().min(8, {
+    message: "Password must be at least 8 characters long.",
+  }).optional(),
 });
 
 export type TOtpVerifySchema = z.infer<typeof OtpVerifySchema>;
+
+export const UpdateProfileSchema = z.object({
+  email: z.string().email(),
+  first_name: z.string().min(1, "First name is required"),
+  last_name: z.string().min(1, "Last name is required"),
+  phone_number: z.string().optional(),
+});
+
+export type TUpdateProfileSchema = z.infer<typeof UpdateProfileSchema>;
+
+export const ChangePasswordSchema = z
+  .object({
+    old_password: z.string(),
+    new_password: z.string().min(8, {
+      message: "Password must be at least 8 characters long.",
+    }),
+    confirm_password: z.string(),
+  })
+  .refine((data) => data.new_password === data.confirm_password, {
+    message: "Passwords do not match.",
+    path: ["confirm_password"],
+  });
+
+export type TChangePasswordSchema = z.infer<typeof ChangePasswordSchema>;
 
 export const CreateOrganizationSchema = z.object({
   name: z.string().min(1, {
@@ -76,3 +113,27 @@ export interface User {
   last_name: string;
   organizations: Organization[];
 }
+
+export const UpdateOrganizationSchema = z.object({
+  name: z.string().min(1, {
+    message: "Organization name is required.",
+  }),
+});
+
+export type TUpdateOrganizationSchema = z.infer<
+  typeof UpdateOrganizationSchema
+>;
+
+export interface OrganizationMember {
+  uuid: string;
+  user: User;
+  role: string;
+  joined_at: string;
+}
+
+export const AddMemberSchema = z.object({
+  email: z.string().email(),
+  role: z.enum(["admin", "member"]),
+});
+
+export type TAddMemberSchema = z.infer<typeof AddMemberSchema>;
