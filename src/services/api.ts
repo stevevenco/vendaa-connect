@@ -10,6 +10,9 @@ import {
   TRequestOtpSchema,
   TUpdateProfileSchema,
   TChangePasswordSchema,
+  TUpdateOrganizationSchema,
+  OrganizationMember,
+  TAddMemberSchema,
 } from "@/types";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
@@ -70,6 +73,32 @@ export const register = (
     headers: {
       "Content-Type": "application/json",
     },
+    body: JSON.stringify(data),
+  });
+};
+
+export const updateOrganization = (
+  orgId: string,
+  data: TUpdateOrganizationSchema
+): Promise<Organization> => {
+  return authApi<Organization>(`/auth/organizations/${orgId}/`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+};
+
+export const getOrganizationMembers = (
+  orgId: string
+): Promise<OrganizationMember[]> => {
+  return authApi<OrganizationMember[]>(`/auth/organizations/${orgId}/members/`);
+};
+
+export const addOrganizationMember = (
+  orgId: string,
+  data: TAddMemberSchema
+): Promise<void> => {
+  return authApi<void>(`/auth/organizations/${orgId}/members/`, {
+    method: "POST",
     body: JSON.stringify(data),
   });
 };
