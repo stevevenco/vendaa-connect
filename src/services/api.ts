@@ -20,7 +20,7 @@ const STAGING_API_URL: string = "https://vendaa-be.onrender.com";
 const PRODUCTION_API_URL: string = "https://api.example.com";
 const API_VERSION: string = "api/v1";
 
-const env: string = import.meta.env.VITE_ENV || "development";
+const env: string = import.meta.env.VITE_ENV || "staging";
 let API_URL: string = "";
 if (env === "development") {
   API_URL = LOCAL_API_URL;
