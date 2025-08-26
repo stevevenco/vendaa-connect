@@ -14,6 +14,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import { useOrganizations } from "@/hooks/useOrganizations";
 
+// Function to truncate text longer than 20 characters
+const truncateText = (text: string, maxLength: number = 20) => {
+  return text.length > maxLength ? `${text.substring(0, maxLength)}...` : text;
+};
+
 export function Header() {
   const { logout } = useAuth();
   const {
@@ -25,7 +30,7 @@ export function Header() {
   } = useOrganizations();
 
   return (
-    <header className="flex h-16 items-center justify-between border-b bg-card px-6">
+    <header className="flex h-16 items-center justify-between border-b bg-card px-4 sm:px-6">
       <div className="flex items-center gap-4">
         <SidebarTrigger />
         <div className="flex items-center gap-3">
@@ -35,8 +40,8 @@ export function Header() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="flex items-center gap-2">
-                  <h2 className="text-lg font-semibold text-foreground">
-                    {selectedOrganization?.name || "Select Organization"}
+                  <h2 className="text-lg font-semibold text-foreground truncate max-w-[150px] sm:max-w-[200px]">
+                    {truncateText(selectedOrganization?.name || "Select Organization")}
                   </h2>
                   <ChevronsUpDown className="h-4 w-4 text-muted-foreground" />
                 </Button>
@@ -53,7 +58,7 @@ export function Header() {
               </DropdownMenuContent>
             </DropdownMenu>
           )}
-          <Badge variant="secondary" className="text-xs">
+          <Badge variant="secondary" className="text-xs hidden md:inline-flex">
             Organization
           </Badge>
         </div>
