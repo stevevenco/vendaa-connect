@@ -18,31 +18,36 @@ export default function Dashboard() {
   const recentVends = dummyTransactions.filter(t => t.type === 'credit_purchase').slice(0, 5);
   const activeMeters = dummyMeters.filter(m => m.status === 'active').length;
 
+  // Function to truncate text longer than 20 characters
+  const truncateText = (text: string, maxLength: number = 20) => {
+    return text.length > maxLength ? `${text.substring(0, maxLength)}...` : text;
+  };
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Dashboard</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
             Welcome back! Here's what's happening with your utility platform.
           </p>
         </div>
-        <Button className="bg-gradient-to-r from-primary to-primary-glow hover:opacity-90">
+        <Button size="sm" className="bg-gradient-to-r from-primary to-primary-glow hover:opacity-90">
           <Plus className="mr-2 h-4 w-4" />
           Quick Top-up
         </Button>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="bg-gradient-to-br from-primary to-primary-glow text-primary-foreground">
+      <div className="flex md:grid md:gap-4 md:grid-cols-2 lg:grid-cols-4 overflow-x-auto snap-x snap-mandatory space-x-4 md:space-x-0 pb-4">
+        <Card className="min-w-[160px] snap-start md:min-w-0 bg-gradient-to-br from-primary to-primary-glow text-primary-foreground">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Wallet Balance</CardTitle>
+            <CardTitle className="text-xs sm:text-sm font-medium">Wallet Balance</CardTitle>
             <Wallet className="h-4 w-4" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-lg sm:text-2xl font-bold">
               ₦{dummyWallet.balance.toLocaleString()}
             </div>
             <p className="text-xs text-primary-foreground/80">
@@ -51,39 +56,39 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="min-w-[160px] snap-start md:min-w-0">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+            <CardTitle className="text-xs sm:text-sm font-medium">Total Revenue</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₦342,891</div>
+            <div className="text-lg sm:text-2xl font-bold">₦342,891</div>
             <p className="text-xs text-muted-foreground">
               +12% from last month
             </p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="min-w-[160px] snap-start md:min-w-0">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Meters</CardTitle>
+            <CardTitle className="text-xs sm:text-sm font-medium">Active Meters</CardTitle>
             <Gauge className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{activeMeters}</div>
+            <div className="text-lg sm:text-2xl font-bold">{activeMeters}</div>
             <p className="text-xs text-muted-foreground">
               2 meters added this week
             </p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="min-w-[160px] snap-start md:min-w-0">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Vends Today</CardTitle>
+            <CardTitle className="text-xs sm:text-sm font-medium">Vends Today</CardTitle>
             <Zap className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">23</div>
+            <div className="text-lg sm:text-2xl font-bold">23</div>
             <p className="text-xs text-muted-foreground">
               +3 from yesterday
             </p>
@@ -93,19 +98,19 @@ export default function Dashboard() {
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
         {/* Vending Chart */}
-        <Card className="col-span-4">
+        <Card className="col-span-4 md:col-span-2 lg:col-span-4">
           <CardHeader>
-            <CardTitle>Utility Vends Overview</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-base sm:text-lg">Utility Vends Overview</CardTitle>
+            <CardDescription className="text-xs sm:text-sm">
               Monthly vending activity across all utility types
             </CardDescription>
           </CardHeader>
           <CardContent className="pl-2">
-            <ResponsiveContainer width="100%" height={350}>
+            <ResponsiveContainer width="100%" height={200}>
               <BarChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
+                <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                <YAxis tick={{ fontSize: 12 }} />
                 <Tooltip 
                   formatter={(value: number) => [`₦${value.toLocaleString()}`, '']}
                 />
@@ -118,10 +123,10 @@ export default function Dashboard() {
         </Card>
 
         {/* Recent Vends */}
-        <Card className="col-span-3">
+        <Card className="col-span-4 md:col-span-2 lg:col-span-3">
           <CardHeader>
-            <CardTitle>Recent Vends</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-base sm:text-lg">Recent Vends</CardTitle>
+            <CardDescription className="text-xs sm:text-sm">
               Latest utility credit purchases
             </CardDescription>
           </CardHeader>
@@ -133,19 +138,19 @@ export default function Dashboard() {
                   className="flex items-center justify-between space-x-4"
                 >
                   <div className="space-y-1">
-                    <p className="text-sm font-medium leading-none">
-                      {vend.meterNumber}
+                    <p className="text-xs sm:text-sm font-medium">
+                      {truncateText(vend.meterNumber)}
                     </p>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-xs text-muted-foreground">
                       {new Date(vend.date).toLocaleDateString()}
                     </p>
                   </div>
                   <div className="flex flex-col items-end">
-                    <Badge variant="secondary" className="text-xs">
+                    <Badge variant="secondary" className="text-xs sm:text-sm">
                       ₦{vend.amount.toLocaleString()}
                     </Badge>
                     <p className="text-xs text-muted-foreground">
-                      {vend.token?.substring(0, 15)}...
+                      {truncateText(vend.token || '')}
                     </p>
                   </div>
                 </div>
@@ -158,17 +163,17 @@ export default function Dashboard() {
       {/* Wallet Activity Chart */}
       <Card>
         <CardHeader>
-          <CardTitle>Wallet Activity Trend</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-base sm:text-lg">Wallet Activity Trend</CardTitle>
+          <CardDescription className="text-xs sm:text-sm">
             Track your wallet balance and spending patterns over time
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={250}>
+          <ResponsiveContainer width="100%" height={200}>
             <LineChart data={dummyReports.creditGenerated}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month" />
-              <YAxis />
+              <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+              <YAxis tick={{ fontSize: 12 }} />
               <Tooltip 
                 formatter={(value: number) => [`₦${value.toLocaleString()}`, 'Amount']}
               />
