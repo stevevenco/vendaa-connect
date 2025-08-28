@@ -5,9 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Wallet, Plus, ArrowUpDown, CreditCard, History } from "lucide-react";
-import { dummyWallet, dummyTransactions } from "@/data/dummyData";
+import { dummyTransactions } from "@/data/dummyData";
+import { useOrganizations } from "@/hooks/useOrganizations";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function WalletPage() {
+  const { walletBalance, isLoading } = useOrganizations();
   const recentTransactions = dummyTransactions.slice(0, 10);
 
   // Function to truncate text longer than 20 characters
@@ -37,9 +40,13 @@ export default function WalletPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-lg sm:text-2xl font-bold">
-              ₦{dummyWallet.balance.toLocaleString()}
-            </div>
+            {isLoading ? (
+              <Skeleton className="h-8 w-3/4" />
+            ) : (
+              <div className="text-lg sm:text-2xl font-bold">
+                {walletBalance ?? "₦0.00"}
+              </div>
+            )}
             <p className="text-xs text-primary-foreground/80 mt-1">
               Available for vending
             </p>
