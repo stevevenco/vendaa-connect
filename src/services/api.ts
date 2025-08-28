@@ -13,6 +13,7 @@ import {
   TUpdateOrganizationSchema,
   OrganizationMember,
   TAddMemberSchema,
+  TUpdateMemberRoleSchema,
 } from "@/types";
 
 const LOCAL_API_URL: string = "http://localhost:8000";
@@ -20,7 +21,7 @@ const STAGING_API_URL: string = "https://vendaa-be.onrender.com";
 const PRODUCTION_API_URL: string = "https://api.example.com";
 const API_VERSION: string = "api/v1";
 
-const env: string = import.meta.env.VITE_ENV || "development";
+const env: string = import.meta.env.VITE_ENV || "staging";
 let API_URL: string = "";
 if (env === "development") {
   API_URL = LOCAL_API_URL;
@@ -43,7 +44,9 @@ const api = async <T>(
     throw new Error(
       errorData.detail ||
         (errorData.non_field_errors && errorData.non_field_errors[0]) ||
-        "API request failed"
+        (errorData.email && errorData.email[0]) ||
+        (errorData.error && errorData.error[0]) ||
+        "Dang! Something went wrong, I wish I could explain, but I don't want to bore you with the details, check back later I promise to have it fixed. 💚"
     );
   }
 
@@ -109,38 +112,57 @@ export const getOrganizationMembers = (
 export const addOrganizationMember = (
   organizationUuid: string,
   data: TAddMemberSchema
-): Promise<void> => {
-  return authApi<void>(`/api/v1/auth/organizations/${organizationUuid}/members/`, {
+): Promise<{ email: string; role: string }> => {
+  return authApi<{ email: string; role: string }>(`/${API_VERSION}/auth/organizations/${organizationUuid}/members/`, {
     method: "POST",
     body: JSON.stringify(data),
   });
 };
 
-export const getOrganizationInvites = (
-  organizationUuid: string
-): Promise<OrganizationInvite[]> => {
-  return authApi<OrganizationInvite[]>(`/api/v1/auth/organizations/${organizationUuid}/invites/`);
+export const updateMemberRole = (
+  orgUuid: string,
+  memberUuid: string,
+  data: TUpdateMemberRoleSchema
+): Promise<{ role: string }> => {
+  return authApi<{ role: string }>(`/${API_VERSION}/auth/organizations/${orgUuid}/members/${memberUuid}/`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
 };
 
-export const getPendingInvites = (): Promise<OrganizationInvite[]> => {
-  return authApi<OrganizationInvite[]>(`/api/v1/auth/invites/`);
-};
-
-export const respondToInvite = (
-  inviteUuid: string,
-  action: 'accept' | 'decline'
+export const removeMember = (
+  orgUuid: string,
+  memberUuid: string
 ): Promise<void> => {
-  return authApi<void>(`/api/v1/auth/invites/${inviteUuid}/${action}/`, {
+  return authApi<void>(`/${API_VERSION}/auth/organizations/${orgUuid}/members/${memberUuid}/`, {
+    method: "DELETE",
+  });
+};
+
+export const getInvitations = (type: 'sent' | 'received' = 'received'): Promise<OrganizationInvite[]> => {
+  return authApi<OrganizationInvite[]>(`/${API_VERSION}/auth/invitations/?type=${type}`);
+};
+
+export const verifyInvitation = (token: string): Promise<OrganizationInvite> => {
+  return authApi<OrganizationInvite>(`/${API_VERSION}/auth/invites/verify/?token=${token}`);
+};
+
+export const acceptInvitation = (token: string): Promise<{ detail: string }> => {
+  return authApi<{ detail: string }>(`/${API_VERSION}/auth/invites/accept/`, {
+    method: "POST",
+    body: JSON.stringify({ token }),
+  });
+};
+
+export const declineInvitation = (invitationId: string): Promise<{ detail: string }> => {
+  return authApi<{ detail: string }>(`/${API_VERSION}/auth/invites/${invitationId}/decline/`, {
     method: "POST"
   });
 };
 
-export const cancelInvite = (
-  organizationUuid: string,
-  inviteUuid: string
-): Promise<void> => {
-  return authApi<void>(`/api/v1/auth/organizations/${organizationUuid}/invites/${inviteUuid}/`, {
-    method: "DELETE"
+export const cancelInvitation = (invitationId: string): Promise<{ detail: string }> => {
+  return authApi<{ detail: string }>(`/${API_VERSION}/auth/invites/${invitationId}/cancel/`, {
+    method: "POST"
   });
 };
 
@@ -189,4 +211,19 @@ export const createOrganization = (
     method: "POST",
     body: JSON.stringify(data),
   });
+};
+
+// Wallet Related Endpoints
+export const getWalletBalance = (organizationId: string): Promise<{ balance: string }> => {
+  return authApi<{ balance: string }>(`/${API_VERSION}/wallet/balance/${organizationId}/`);
+};
+
+export const initiateWalletFunding = (
+  organizationId: string,
+  paymentOption: 'online_checkout' | 'bank_transfer',
+  amount: number
+): Promise<PaymentOption[]> => {
+  return authApi<PaymentOption[]>(
+    `/${API_VERSION}/wallet/initiate-payment/${organizationId}?payment_option=${paymentOption}&amount=${amount}`
+  );
 };

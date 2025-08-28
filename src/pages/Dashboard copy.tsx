@@ -40,8 +40,8 @@ export default function Dashboard() {
       </div>
 
       {/* Stats Cards */}
-      <div className="w-full">
-        <Card className="w-full bg-gradient-to-br from-primary to-primary-glow text-primary-foreground">
+      <div className="flex md:grid md:gap-4 md:grid-cols-2 lg:grid-cols-4 overflow-x-auto snap-x snap-mandatory space-x-4 md:space-x-0 pb-4">
+        <Card className="min-w-[160px] snap-start md:min-w-0 bg-gradient-to-br from-primary to-primary-glow text-primary-foreground">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-xs sm:text-sm font-medium">Wallet Balance</CardTitle>
             <Wallet className="h-4 w-4" />
@@ -52,6 +52,45 @@ export default function Dashboard() {
             </div>
             <p className="text-xs text-primary-foreground/80">
               +₦10,000 from last top-up
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="min-w-[160px] snap-start md:min-w-0">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium">Total Revenue</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-lg sm:text-2xl font-bold">₦342,891</div>
+            <p className="text-xs text-muted-foreground">
+              +12% from last month
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="min-w-[160px] snap-start md:min-w-0">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium">Active Meters</CardTitle>
+            <Gauge className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-lg sm:text-2xl font-bold">{activeMeters}</div>
+            <p className="text-xs text-muted-foreground">
+              2 meters added this week
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="min-w-[160px] snap-start md:min-w-0">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium">Vends Today</CardTitle>
+            <Zap className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-lg sm:text-2xl font-bold">23</div>
+            <p className="text-xs text-muted-foreground">
+              +3 from yesterday
             </p>
           </CardContent>
         </Card>
