@@ -5,6 +5,7 @@ import { Wallet, Plus } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
 import { dummyReports, dummyTransactions, dummyMeters } from "@/data/dummyData";
 import { useOrganizations } from "@/hooks/useOrganizations";
+import { useTopUp } from "@/hooks/useTopUp";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const chartData = [
@@ -18,6 +19,7 @@ const chartData = [
 
 export default function Dashboard() {
   const { walletBalance, isLoading } = useOrganizations();
+  const { openModal } = useTopUp();
   const recentVends = dummyTransactions.filter(t => t.type === 'credit_purchase').slice(0, 5);
   const activeMeters = dummyMeters.filter(m => m.status === 'active').length;
 
@@ -36,7 +38,11 @@ export default function Dashboard() {
             Welcome back! Here's what's happening with your utility platform.
           </p>
         </div>
-        <Button size="sm" className="bg-gradient-to-r from-primary to-primary-glow hover:opacity-90">
+        <Button
+          size="sm"
+          className="bg-gradient-to-r from-primary to-primary-glow hover:opacity-90"
+          onClick={openModal}
+        >
           <Plus className="mr-2 h-4 w-4" />
           Quick Top-up
         </Button>

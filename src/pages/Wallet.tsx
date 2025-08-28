@@ -1,74 +1,21 @@
-import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Wallet, Plus, ArrowUpDown, CreditCard, History, Copy } from "lucide-react";
+import { Wallet, Plus, ArrowUpDown, History } from "lucide-react";
 import { dummyTransactions } from "@/data/dummyData";
 import { useOrganizations } from "@/hooks/useOrganizations";
+import { useTopUp } from "@/hooks/useTopUp";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PaymentOption, BankTransferPaymentOption, OnlineCheckoutPaymentOption } from "@/types";
-import { initiateWalletFunding } from "@/services/api";
-import { useToast } from "@/hooks/use-toast";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
 
 export default function WalletPage() {
-  const { selectedOrganization, walletBalance, isLoading } = useOrganizations();
-  const { toast } = useToast();
-  const [amount, setAmount] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<"bank_transfer" | "online_checkout" | null>(null);
-  const [paymentOptions, setPaymentOptions] = useState<PaymentOption[]>([]);
-  const [isFetching, setIsFetching] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
+  const { walletBalance, isLoading } = useOrganizations();
+  const { openModal } = useTopUp();
   const recentTransactions = dummyTransactions.slice(0, 10);
 
   // Function to truncate text longer than 20 characters
   const truncateText = (text: string, maxLength: number = 20) => {
     return text.length > maxLength ? `${text.substring(0, maxLength)}...` : text;
-  };
-
-  const handleProceedToPayment = async () => {
-    if (!amount || !paymentMethod || !selectedOrganization) {
-      toast({
-        title: "Missing Information",
-        description: "Please enter an amount and select a payment method.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsFetching(true);
-    try {
-      const options = await initiateWalletFunding(
-        selectedOrganization.uuid,
-        paymentMethod,
-        parseFloat(amount)
-      );
-      setPaymentOptions(options);
-      setIsModalOpen(true);
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setIsFetching(false);
-    }
-  };
-
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast({ title: "Copied!", description: "Account number copied to clipboard." });
   };
 
   return (
@@ -119,68 +66,17 @@ export default function WalletPage() {
                 Add Funds to Wallet
               </CardTitle>
               <CardDescription className="text-xs sm:text-sm">
-                Choose your preferred payment method to add funds.
+                Click the button below to add funds to your wallet.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="amount" className="text-xs sm:text-sm">Amount (NGN)</Label>
-                  <Input
-                    id="amount"
-                    type="number"
-                    placeholder="Enter amount"
-                    min="1000"
-                    step="100"
-                    className="text-sm"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Minimum top-up amount is ₦1,000
-                  </p>
-                </div>
-
-                <div className="grid gap-3">
-                  <Label className="text-xs sm:text-sm">Payment Method</Label>
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    <Button
-                      variant={paymentMethod === 'bank_transfer' ? 'default' : 'outline'}
-                      onClick={() => setPaymentMethod('bank_transfer')}
-                      className="justify-start h-auto p-3 text-left"
-                    >
-                      <CreditCard className="mr-2 h-4 w-4 flex-shrink-0" />
-                      <div>
-                        <div className="text-xs sm:text-sm font-medium">Bank Transfer</div>
-                        <div className="text-xs text-muted-foreground">
-                          Direct bank transfer - Instant
-                        </div>
-                      </div>
-                    </Button>
-                    <Button
-                      variant={paymentMethod === 'online_checkout' ? 'default' : 'outline'}
-                      onClick={() => setPaymentMethod('online_checkout')}
-                      className="justify-start h-auto p-3 text-left"
-                    >
-                      <CreditCard className="mr-2 h-4 w-4 flex-shrink-0" />
-                      <div>
-                        <div className="text-xs sm:text-sm font-medium">Online Checkout</div>
-                        <div className="text-xs text-muted-foreground">
-                          Pay with debit card - Small fee
-                        </div>
-                      </div>
-                    </Button>
-                  </div>
-                </div>
-
-                <Button
-                  onClick={handleProceedToPayment}
-                  disabled={isFetching || !amount || !paymentMethod}
-                  className="w-full bg-gradient-to-r from-primary to-primary-glow text-sm"
-                >
-                  {isFetching ? "Loading..." : "Proceed to Payment"}
-                </Button>
-              </div>
+            <CardContent>
+              <Button
+                onClick={openModal}
+                className="w-full bg-gradient-to-r from-primary to-primary-glow text-sm"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Top Up Wallet
+              </Button>
             </CardContent>
           </Card>
         </TabsContent>
@@ -233,52 +129,6 @@ export default function WalletPage() {
           </Card>
         </TabsContent>
       </Tabs>
-
-      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Complete Your Payment</DialogTitle>
-            <DialogDescription>
-              {paymentMethod === 'bank_transfer'
-                ? 'Use the details below to complete your payment.'
-                : 'Click on a provider to proceed with your payment.'}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            {paymentOptions.map((option) => (
-              <div key={option.slug}>
-                {'payment_url' in option ? (
-                  <a href={(option as OnlineCheckoutPaymentOption).payment_url} target="_blank" rel="noopener noreferrer" className="block">
-                    <Card className="hover:bg-muted/50 transition-colors">
-                      <CardHeader>
-                        <img src={option.logo} alt={option.payment_gateway} className="h-10" />
-                      </CardHeader>
-                    </Card>
-                  </a>
-                ) : (
-                  <Card>
-                    <CardHeader>
-                      <img src={option.logo} alt={option.payment_gateway} className="h-10" />
-                    </CardHeader>
-                    <CardContent className="space-y-2">
-                      <p><strong>Bank:</strong> {(option as BankTransferPaymentOption).bank_name}</p>
-                      <p><strong>Account Name:</strong> {(option as BankTransferPaymentOption).account_name}</p>
-                      <div className="flex items-center">
-                        <p><strong>Account Number:</strong> {(option as BankTransferPaymentOption).account_number}</p>
-                        <Button variant="ghost" size="sm" onClick={() => copyToClipboard((option as BankTransferPaymentOption).account_number)}>
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      <p><strong>Amount:</strong> ₦{option.amount}</p>
-                      <p><strong>Fee:</strong> ₦{option.fee}</p>
-                    </CardContent>
-                  </Card>
-                )}
-              </div>
-            ))}
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
