@@ -54,9 +54,9 @@ export default function AcceptInvitePage() {
               <XCircle className="h-16 w-16 text-red-500 mx-auto" />
               <h2 className="text-xl font-semibold">Invalid Invitation</h2>
               <p>{error || 'The invitation link is either invalid or has expired.'}</p>
-              <Button asChild variant="outline">
+              {/* <Button asChild variant="outline">
                 <Link to="/">Go to Homepage</Link>
-              </Button>
+              </Button> */}
             </div>
           )}
         </CardContent>
