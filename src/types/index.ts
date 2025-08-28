@@ -137,3 +137,12 @@ export const AddMemberSchema = z.object({
 });
 
 export type TAddMemberSchema = z.infer<typeof AddMemberSchema>;
+
+export interface OrganizationInvite {
+  uuid: string;
+  organization: Organization;
+  email: string;
+  role: string;
+  status: 'pending' | 'accepted' | 'declined' | 'cancelled';
+  created_at: string;
+}

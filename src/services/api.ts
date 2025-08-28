@@ -20,7 +20,7 @@ const STAGING_API_URL: string = "https://vendaa-be.onrender.com";
 const PRODUCTION_API_URL: string = "https://api.example.com";
 const API_VERSION: string = "api/v1";
 
-const env: string = import.meta.env.VITE_ENV || "staging";
+const env: string = import.meta.env.VITE_ENV || "development";
 let API_URL: string = "";
 if (env === "development") {
   API_URL = LOCAL_API_URL;
@@ -107,12 +107,40 @@ export const getOrganizationMembers = (
 };
 
 export const addOrganizationMember = (
-  orgId: string,
+  organizationUuid: string,
   data: TAddMemberSchema
 ): Promise<void> => {
-  return authApi<void>(`/${API_VERSION}/auth/organizations/${orgId}/members/`, {
+  return authApi<void>(`/api/v1/auth/organizations/${organizationUuid}/members/`, {
     method: "POST",
     body: JSON.stringify(data),
+  });
+};
+
+export const getOrganizationInvites = (
+  organizationUuid: string
+): Promise<OrganizationInvite[]> => {
+  return authApi<OrganizationInvite[]>(`/api/v1/auth/organizations/${organizationUuid}/invites/`);
+};
+
+export const getPendingInvites = (): Promise<OrganizationInvite[]> => {
+  return authApi<OrganizationInvite[]>(`/api/v1/auth/invites/`);
+};
+
+export const respondToInvite = (
+  inviteUuid: string,
+  action: 'accept' | 'decline'
+): Promise<void> => {
+  return authApi<void>(`/api/v1/auth/invites/${inviteUuid}/${action}/`, {
+    method: "POST"
+  });
+};
+
+export const cancelInvite = (
+  organizationUuid: string,
+  inviteUuid: string
+): Promise<void> => {
+  return authApi<void>(`/api/v1/auth/organizations/${organizationUuid}/invites/${inviteUuid}/`, {
+    method: "DELETE"
   });
 };
 

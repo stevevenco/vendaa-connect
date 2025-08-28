@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -17,11 +18,16 @@ import {
   UpdateOrganizationSchema,
   TAddMemberSchema,
   AddMemberSchema,
+  OrganizationInvite,
 } from "@/types";
 import {
   updateOrganization,
   getOrganizationMembers,
   addOrganizationMember,
+  getOrganizationInvites,
+  getPendingInvites,
+  respondToInvite,
+  cancelInvite,
 } from "@/services/api";
 import { useToast } from "@/components/ui/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -70,6 +76,17 @@ export default function OrganizationPage() {
     enabled: !!selectedOrganization,
   });
 
+  const { data: sentInvites, isLoading: isLoadingSentInvites } = useQuery({
+    queryKey: ["sent-invites", selectedOrganization?.uuid],
+    queryFn: () => getOrganizationInvites(selectedOrganization!.uuid),
+    enabled: !!selectedOrganization,
+  });
+
+  const { data: receivedInvites, isLoading: isLoadingReceivedInvites } = useQuery({
+    queryKey: ["received-invites"],
+    queryFn: getPendingInvites,
+  });
+
   const updateOrganizationMutation = useMutation({
     mutationFn: (data: TUpdateOrganizationSchema) =>
       updateOrganization(selectedOrganization!.uuid, data),
@@ -79,6 +96,50 @@ export default function OrganizationPage() {
         description: "Your organization has been updated successfully.",
       });
       queryClient.invalidateQueries({ queryKey: ["user"] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description:
+          error instanceof Error ? error.message : "An error occurred.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const respondToInviteMutation = useMutation({
+    mutationFn: ({ inviteUuid, action }: { inviteUuid: string; action: 'accept' | 'decline' }) =>
+      respondToInvite(inviteUuid, action),
+    onSuccess: () => {
+      toast({
+        title: "Invite Response Sent",
+        description: "Your response to the invitation has been sent.",
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["received-invites"],
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description:
+          error instanceof Error ? error.message : "An error occurred.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const cancelInviteMutation = useMutation({
+    mutationFn: (inviteUuid: string) =>
+      cancelInvite(selectedOrganization!.uuid, inviteUuid),
+    onSuccess: () => {
+      toast({
+        title: "Invite Cancelled",
+        description: "The invitation has been cancelled.",
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["sent-invites", selectedOrganization?.uuid],
+      });
     },
     onError: (error) => {
       toast({
@@ -137,8 +198,8 @@ export default function OrganizationPage() {
         </div>
       </div>
 
-      {/* Mobile View: Dropdown */}
-      <div className="md:hidden space-y-4">
+      {/* Mobile and Tablet View: Dropdown */}
+      <div className="lg:hidden space-y-4">
         <Select value={activeTab} onValueChange={setActiveTab}>
           <SelectTrigger className="text-sm">
             <SelectValue placeholder="Select section" />
@@ -147,6 +208,7 @@ export default function OrganizationPage() {
             <SelectItem value="details" className="text-sm">Organization Details</SelectItem>
             <SelectItem value="members" className="text-sm">Members</SelectItem>
             <SelectItem value="add" className="text-sm">Add Member</SelectItem>
+            <SelectItem value="invites" className="text-sm">Invites</SelectItem>
           </SelectContent>
         </Select>
 
@@ -237,6 +299,114 @@ export default function OrganizationPage() {
           </Card>
         )}
 
+        {activeTab === "invites" && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base sm:text-lg">Organization Invites</CardTitle>
+              <CardDescription className="text-xs sm:text-sm">
+                Manage invitations to your organization.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Received Invites Section */}
+              <div>
+                <h3 className="font-medium mb-4">Invites Received</h3>
+                {isLoadingReceivedInvites ? (
+                  <p className="text-sm">Loading invites...</p>
+                ) : receivedInvites?.length === 0 ? (
+                  <Alert>
+                    <AlertDescription>
+                      You have no pending invitations.
+                    </AlertDescription>
+                  </Alert>
+                ) : (
+                  <div className="space-y-4">
+                    {receivedInvites?.map((invite) => (
+                      <Card key={invite.uuid}>
+                        <CardContent className="pt-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-medium">{invite.organization.name}</p>
+                              <p className="text-sm text-muted-foreground">Role: {invite.role}</p>
+                            </div>
+                            <div className="space-x-2">
+                              <Button
+                                onClick={() =>
+                                  respondToInviteMutation.mutate({
+                                    inviteUuid: invite.uuid,
+                                    action: "accept",
+                                  })
+                                }
+                                disabled={respondToInviteMutation.isPending}
+                                size="sm"
+                              >
+                                Accept
+                              </Button>
+                              <Button
+                                onClick={() =>
+                                  respondToInviteMutation.mutate({
+                                    inviteUuid: invite.uuid,
+                                    action: "decline",
+                                  })
+                                }
+                                disabled={respondToInviteMutation.isPending}
+                                variant="outline"
+                                size="sm"
+                              >
+                                Decline
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Sent Invites Section */}
+              <div>
+                <h3 className="font-medium mb-4">Invites Sent</h3>
+                {isLoadingSentInvites ? (
+                  <p className="text-sm">Loading invites...</p>
+                ) : sentInvites?.length === 0 ? (
+                  <Alert>
+                    <AlertDescription>
+                      No pending invites have been sent.
+                    </AlertDescription>
+                  </Alert>
+                ) : (
+                  <div className="space-y-4">
+                    {sentInvites?.map((invite) => (
+                      <Card key={invite.uuid}>
+                        <CardContent className="pt-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-medium">{invite.email}</p>
+                              <p className="text-sm text-muted-foreground">Role: {invite.role}</p>
+                              <p className="text-sm text-muted-foreground">
+                                Sent: {new Date(invite.created_at).toLocaleDateString()}
+                              </p>
+                            </div>
+                            <Button
+                              onClick={() => cancelInviteMutation.mutate(invite.uuid)}
+                              disabled={cancelInviteMutation.isPending}
+                              variant="destructive"
+                              size="sm"
+                            >
+                              Cancel Invite
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {activeTab === "add" && (
           <Card>
             <CardHeader>
@@ -299,11 +469,12 @@ export default function OrganizationPage() {
       </div>
 
       {/* Desktop View: Tabs */}
-      <Tabs defaultValue="details" className="hidden md:block space-y-4" onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
+      <Tabs defaultValue="details" className="hidden lg:block space-y-4" onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="details" className="text-sm sm:text-base">Organization Details</TabsTrigger>
           <TabsTrigger value="members" className="text-sm sm:text-base">Members</TabsTrigger>
           <TabsTrigger value="add" className="text-sm sm:text-base">Add Member</TabsTrigger>
+          <TabsTrigger value="invites" className="text-sm sm:text-base">Invites</TabsTrigger>
         </TabsList>
 
         <TabsContent value="details" className="space-y-4">
@@ -389,6 +560,114 @@ export default function OrganizationPage() {
                   </TableBody>
                 </Table>
               )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="invites" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base sm:text-lg">Organization Invites</CardTitle>
+              <CardDescription className="text-xs sm:text-sm">
+                Manage invitations to your organization.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Received Invites Section */}
+              <div>
+                <h3 className="font-medium mb-4">Invites Received</h3>
+                {isLoadingReceivedInvites ? (
+                  <p className="text-sm">Loading invites...</p>
+                ) : receivedInvites?.length === 0 ? (
+                  <Alert>
+                    <AlertDescription>
+                      You have no pending invitations.
+                    </AlertDescription>
+                  </Alert>
+                ) : (
+                  <div className="space-y-4">
+                    {receivedInvites?.map((invite) => (
+                      <Card key={invite.uuid}>
+                        <CardContent className="pt-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-medium">{invite.organization.name}</p>
+                              <p className="text-sm text-muted-foreground">Role: {invite.role}</p>
+                            </div>
+                            <div className="space-x-2">
+                              <Button
+                                onClick={() =>
+                                  respondToInviteMutation.mutate({
+                                    inviteUuid: invite.uuid,
+                                    action: "accept",
+                                  })
+                                }
+                                disabled={respondToInviteMutation.isPending}
+                                size="sm"
+                              >
+                                Accept
+                              </Button>
+                              <Button
+                                onClick={() =>
+                                  respondToInviteMutation.mutate({
+                                    inviteUuid: invite.uuid,
+                                    action: "decline",
+                                  })
+                                }
+                                disabled={respondToInviteMutation.isPending}
+                                variant="outline"
+                                size="sm"
+                              >
+                                Decline
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Sent Invites Section */}
+              <div>
+                <h3 className="font-medium mb-4">Invites Sent</h3>
+                {isLoadingSentInvites ? (
+                  <p className="text-sm">Loading invites...</p>
+                ) : sentInvites?.length === 0 ? (
+                  <Alert>
+                    <AlertDescription>
+                      No pending invites have been sent.
+                    </AlertDescription>
+                  </Alert>
+                ) : (
+                  <div className="space-y-4">
+                    {sentInvites?.map((invite) => (
+                      <Card key={invite.uuid}>
+                        <CardContent className="pt-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-medium">{invite.email}</p>
+                              <p className="text-sm text-muted-foreground">Role: {invite.role}</p>
+                              <p className="text-sm text-muted-foreground">
+                                Sent: {new Date(invite.created_at).toLocaleDateString()}
+                              </p>
+                            </div>
+                            <Button
+                              onClick={() => cancelInviteMutation.mutate(invite.uuid)}
+                              disabled={cancelInviteMutation.isPending}
+                              variant="destructive"
+                              size="sm"
+                            >
+                              Cancel Invite
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
