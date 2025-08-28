@@ -19,9 +19,6 @@ import {
   TAddMemberSchema,
   AddMemberSchema,
   OrganizationInvite,
-  TUpdateMemberRoleSchema,
-  UpdateMemberRoleSchema,
-  OrganizationMember,
 } from "@/types";
 import {
   updateOrganization,
@@ -31,8 +28,6 @@ import {
   acceptInvitation,
   declineInvitation,
   cancelInvitation,
-  updateMemberRole,
-  removeMember,
 } from "@/services/api";
 import { useToast } from "@/components/ui/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -60,8 +55,6 @@ export default function OrganizationPage() {
   const { selectedOrganization } = useOrganizations();
   const [activeTab, setActiveTab] = useState("details");
 
-  const [editingMember, setEditingMember] = useState<OrganizationMember | null>(null);
-
   const organizationForm = useForm<TUpdateOrganizationSchema>({
     resolver: zodResolver(UpdateOrganizationSchema),
     values: {
@@ -75,10 +68,6 @@ export default function OrganizationPage() {
       email: "",
       role: "member",
     },
-  });
-
-  const updateMemberRoleForm = useForm<TUpdateMemberRoleSchema>({
-    resolver: zodResolver(UpdateMemberRoleSchema),
   });
 
   const { data: members, isLoading: isLoadingMembers } = useQuery({
@@ -181,61 +170,16 @@ export default function OrganizationPage() {
     },
   });
 
-  const updateMemberRoleMutation = useMutation({
-    mutationFn: (data: TUpdateMemberRoleSchema) =>
-      updateMemberRole(selectedOrganization!.uuid, editingMember!.uuid, data),
-    onSuccess: () => {
-      toast({
-        title: "Member Role Updated",
-        description: "The member's role has been updated successfully.",
-      });
-      queryClient.invalidateQueries({
-        queryKey: ["members", selectedOrganization?.uuid],
-      });
-      setEditingMember(null);
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description:
-          error instanceof Error ? error.message : "An error occurred.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const removeMemberMutation = useMutation({
-    mutationFn: (memberUuid: string) =>
-      removeMember(selectedOrganization!.uuid, memberUuid),
-    onSuccess: () => {
-      toast({
-        title: "Member Removed",
-        description: "The member has been removed from the organization.",
-      });
-      queryClient.invalidateQueries({
-        queryKey: ["members", selectedOrganization?.uuid],
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description:
-          error instanceof Error ? error.message : "An error occurred.",
-        variant: "destructive",
-      });
-    },
-  });
-
   const addMemberMutation = useMutation({
     mutationFn: (data: TAddMemberSchema) =>
       addOrganizationMember(selectedOrganization!.uuid, data),
     onSuccess: () => {
       toast({
-        title: "Member Invited",
-        description: "The new member has been invited to the organization.",
+        title: "Member Added",
+        description: "The new member has been added to the organization.",
       });
       queryClient.invalidateQueries({
-        queryKey: ["invitations", "sent"],
+        queryKey: ["members", selectedOrganization?.uuid],
       });
       addMemberForm.reset();
     },
@@ -257,18 +201,12 @@ export default function OrganizationPage() {
     addMemberMutation.mutate(data);
   };
 
-  const onUpdateMemberRoleSubmit = (data: TUpdateMemberRoleSchema) => {
-    updateMemberRoleMutation.mutate(data);
-  };
-
   // Function to truncate text longer than 20 characters
   const truncateText = (text: string, maxLength: number = 20) => {
     return text.length > maxLength ? `${text.substring(0, maxLength)}...` : text;
   };
 
-  const renderInvitesList = (invites: OrganizationInvite[] | undefined, type: 'received' | 'sent') => {
-    if (!invites) return null;
-    
+  const renderInvitesList = (invites: OrganizationInvite[], type: 'received' | 'sent') => {
     if (type === 'received') {
       return invites.map((invite) => (
         <Card key={invite.token}>
@@ -351,7 +289,7 @@ export default function OrganizationPage() {
           <h3 className="font-medium mb-4">Invites Received</h3>
           {isLoadingReceivedInvites ? (
             <p className="text-sm">Loading invites...</p>
-          ) : !receivedInvites || receivedInvites.length === 0 ? (
+          ) : receivedInvites?.length === 0 ? (
             <Alert>
               <AlertDescription>
                 You have no pending invitations.
@@ -369,7 +307,7 @@ export default function OrganizationPage() {
           <h3 className="font-medium mb-4">Invites Sent</h3>
           {isLoadingSentInvites ? (
             <p className="text-sm">Loading invites...</p>
-          ) : !sentInvites || sentInvites.length === 0 ? (
+          ) : sentInvites?.length === 0 ? (
             <Alert>
               <AlertDescription>
                 No pending invites have been sent.
@@ -471,7 +409,6 @@ export default function OrganizationPage() {
                       <TableHead className="text-xs sm:text-sm">Email</TableHead>
                       <TableHead className="text-xs sm:text-sm">Role</TableHead>
                       <TableHead className="text-xs sm:text-sm">Joined At</TableHead>
-                      <TableHead className="text-xs sm:text-sm">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -484,65 +421,10 @@ export default function OrganizationPage() {
                           {truncateText(member.user.email)}
                         </TableCell>
                         <TableCell className="text-xs sm:text-sm">
-                          {editingMember?.uuid === member.uuid ? (
-                            <Form {...updateMemberRoleForm}>
-                              <form
-                                onSubmit={updateMemberRoleForm.handleSubmit(onUpdateMemberRoleSubmit)}
-                                className="flex items-center gap-2"
-                              >
-                                <FormField
-                                  control={updateMemberRoleForm.control}
-                                  name="role"
-                                  defaultValue={member.role}
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                        <FormControl>
-                                          <SelectTrigger>
-                                            <SelectValue placeholder="Select a role" />
-                                          </SelectTrigger>
-                                        </FormControl>
-                                        <SelectContent>
-                                          <SelectItem value="admin">Admin</SelectItem>
-                                          <SelectItem value="member">Member</SelectItem>
-                                          <SelectItem value="owner">Owner</SelectItem>
-                                        </SelectContent>
-                                      </Select>
-                                    </FormItem>
-                                  )}
-                                />
-                                <Button type="submit" size="sm" disabled={updateMemberRoleMutation.isPending}>
-                                  Save
-                                </Button>
-                                <Button type="button" size="sm" variant="outline" onClick={() => setEditingMember(null)}>
-                                  Cancel
-                                </Button>
-                              </form>
-                            </Form>
-                          ) : (
-                            truncateText(member.role)
-                          )}
+                          {truncateText(member.role)}
                         </TableCell>
                         <TableCell className="text-xs sm:text-sm">
                           {new Date(member.joined_at).toLocaleDateString()}
-                        </TableCell>
-                        <TableCell className="space-x-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setEditingMember(member)}
-                            disabled={editingMember?.uuid === member.uuid}
-                          >
-                            Edit Role
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => removeMemberMutation.mutate(member.uuid)}
-                            disabled={removeMemberMutation.isPending}
-                          >
-                            Remove
-                          </Button>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -558,7 +440,7 @@ export default function OrganizationPage() {
         {activeTab === "add" && (
           <Card>
             <CardHeader>
-              <CardTitle className="text-base sm:text-lg">Invite Member</CardTitle>
+              <CardTitle className="text-base sm:text-lg">Add Member</CardTitle>
               <CardDescription className="text-xs sm:text-sm">
                 Invite a new member to your organization.
               </CardDescription>
@@ -607,7 +489,7 @@ export default function OrganizationPage() {
                     )}
                   />
                   <Button type="submit" disabled={addMemberMutation.isPending} className="text-sm">
-                    {addMemberMutation.isPending ? "Inviting..." : "Invite Member"}
+                    {addMemberMutation.isPending ? "Adding..." : "Add Member"}
                   </Button>
                 </form>
               </Form>
@@ -621,7 +503,7 @@ export default function OrganizationPage() {
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="details" className="text-sm sm:text-base">Organization Details</TabsTrigger>
           <TabsTrigger value="members" className="text-sm sm:text-base">Members</TabsTrigger>
-          <TabsTrigger value="add" className="text-sm sm:text-base">Invite Member</TabsTrigger>
+          <TabsTrigger value="add" className="text-sm sm:text-base">Add Member</TabsTrigger>
           <TabsTrigger value="invites" className="text-sm sm:text-base">Invites</TabsTrigger>
         </TabsList>
 
@@ -686,7 +568,6 @@ export default function OrganizationPage() {
                       <TableHead className="text-xs sm:text-sm">Email</TableHead>
                       <TableHead className="text-xs sm:text-sm">Role</TableHead>
                       <TableHead className="text-xs sm:text-sm">Joined At</TableHead>
-                      <TableHead className="text-xs sm:text-sm">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -699,65 +580,10 @@ export default function OrganizationPage() {
                           {truncateText(member.user.email)}
                         </TableCell>
                         <TableCell className="text-xs sm:text-sm">
-                          {editingMember?.uuid === member.uuid ? (
-                            <Form {...updateMemberRoleForm}>
-                              <form
-                                onSubmit={updateMemberRoleForm.handleSubmit(onUpdateMemberRoleSubmit)}
-                                className="flex items-center gap-2"
-                              >
-                                <FormField
-                                  control={updateMemberRoleForm.control}
-                                  name="role"
-                                  defaultValue={member.role}
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                        <FormControl>
-                                          <SelectTrigger>
-                                            <SelectValue placeholder="Select a role" />
-                                          </SelectTrigger>
-                                        </FormControl>
-                                        <SelectContent>
-                                          <SelectItem value="admin">Admin</SelectItem>
-                                          <SelectItem value="member">Member</SelectItem>
-                                          <SelectItem value="owner">Owner</SelectItem>
-                                        </SelectContent>
-                                      </Select>
-                                    </FormItem>
-                                  )}
-                                />
-                                <Button type="submit" size="sm" disabled={updateMemberRoleMutation.isPending}>
-                                  Save
-                                </Button>
-                                <Button type="button" size="sm" variant="outline" onClick={() => setEditingMember(null)}>
-                                  Cancel
-                                </Button>
-                              </form>
-                            </Form>
-                          ) : (
-                            truncateText(member.role)
-                          )}
+                          {truncateText(member.role)}
                         </TableCell>
                         <TableCell className="text-xs sm:text-sm">
                           {new Date(member.joined_at).toLocaleDateString()}
-                        </TableCell>
-                        <TableCell className="space-x-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setEditingMember(member)}
-                            disabled={editingMember?.uuid === member.uuid}
-                          >
-                            Edit Role
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => removeMemberMutation.mutate(member.uuid)}
-                            disabled={removeMemberMutation.isPending}
-                          >
-                            Remove
-                          </Button>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -775,7 +601,7 @@ export default function OrganizationPage() {
         <TabsContent value="add" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base sm:text-lg">Invite Member</CardTitle>
+              <CardTitle className="text-base sm:text-lg">Add Member</CardTitle>
               <CardDescription className="text-xs sm:text-sm">
                 Invite a new member to your organization.
               </CardDescription>
@@ -824,7 +650,7 @@ export default function OrganizationPage() {
                     )}
                   />
                   <Button type="submit" disabled={addMemberMutation.isPending} className="text-sm">
-                    {addMemberMutation.isPending ? "Inviting..." : "Invite Member"}
+                    {addMemberMutation.isPending ? "Adding..." : "Add Member"}
                   </Button>
                 </form>
               </Form>

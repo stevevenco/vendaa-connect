@@ -27,9 +27,8 @@ export default function WalletPage() {
       </div>
 
       {/* Wallet Overview */}
-      {/* <div className="flex md:grid md:gap-4 md:grid-cols-2 lg:grid-cols-4 overflow-x-auto snap-x snap-mandatory space-x-4 md:space-x-0 pb-4"> */}
-      <div className="w-full">
-        <Card className="w-full min-w-[160px] snap-start md:min-w-0 bg-gradient-to-br from-primary to-primary-glow text-primary-foreground">
+      <div className="flex md:grid md:gap-4 md:grid-cols-2 lg:grid-cols-4 overflow-x-auto snap-x snap-mandatory space-x-4 md:space-x-0 pb-4">
+        <Card className="min-w-[160px] snap-start md:min-w-0 bg-gradient-to-br from-primary to-primary-glow text-primary-foreground">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-xs sm:text-sm flex items-center gap-2">
               <Wallet className="h-4 w-4" />
@@ -43,6 +42,36 @@ export default function WalletPage() {
             <p className="text-xs text-primary-foreground/80 mt-1">
               Available for vending
             </p>
+          </CardContent>
+        </Card>
+
+        <Card className="min-w-[160px] snap-start md:min-w-0">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-xs sm:text-sm">Total Spent</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-lg sm:text-2xl font-bold">₦{dummyWallet.totalSpent.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground">Lifetime spending</p>
+          </CardContent>
+        </Card>
+
+        <Card className="min-w-[160px] snap-start md:min-w-0">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-xs sm:text-sm">Total Top-ups</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-lg sm:text-2xl font-bold">₦{dummyWallet.totalTopUps.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground">All time deposits</p>
+          </CardContent>
+        </Card>
+
+        <Card className="min-w-[160px] snap-start md:min-w-0">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-xs sm:text-sm">Pending</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-lg sm:text-2xl font-bold">{dummyWallet.pendingTransactions}</div>
+            <p className="text-xs text-muted-foreground">Pending transactions</p>
           </CardContent>
         </Card>
       </div>
