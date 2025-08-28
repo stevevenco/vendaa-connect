@@ -6,6 +6,7 @@ export interface OrganizationContextType {
   switchOrganization: (organizationUuid: string) => void;
   isLoading: boolean;
   user: User | null;
+  walletBalance: string | null;
 }
 
 export interface OrganizationProviderProps {

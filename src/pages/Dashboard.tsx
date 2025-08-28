@@ -1,9 +1,12 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Wallet, TrendingUp, Gauge, Zap, Plus } from "lucide-react";
+import { Wallet, Plus } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
-import { dummyWallet, dummyReports, dummyTransactions, dummyMeters } from "@/data/dummyData";
+import { dummyReports, dummyTransactions, dummyMeters } from "@/data/dummyData";
+import { useOrganizations } from "@/hooks/useOrganizations";
+import { useTopUp } from "@/hooks/useTopUp";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const chartData = [
   { month: "Jan", electricity: 45000, water: 18000, gas: 12000 },
@@ -15,6 +18,8 @@ const chartData = [
 ];
 
 export default function Dashboard() {
+  const { walletBalance, isLoading } = useOrganizations();
+  const { openModal } = useTopUp();
   const recentVends = dummyTransactions.filter(t => t.type === 'credit_purchase').slice(0, 5);
   const activeMeters = dummyMeters.filter(m => m.status === 'active').length;
 
@@ -33,7 +38,11 @@ export default function Dashboard() {
             Welcome back! Here's what's happening with your utility platform.
           </p>
         </div>
-        <Button size="sm" className="bg-gradient-to-r from-primary to-primary-glow hover:opacity-90">
+        <Button
+          size="sm"
+          className="bg-gradient-to-r from-primary to-primary-glow hover:opacity-90"
+          onClick={openModal}
+        >
           <Plus className="mr-2 h-4 w-4" />
           Quick Top-up
         </Button>
@@ -47,11 +56,15 @@ export default function Dashboard() {
             <Wallet className="h-4 w-4" />
           </CardHeader>
           <CardContent>
-            <div className="text-lg sm:text-2xl font-bold">
-              ₦{dummyWallet.balance.toLocaleString()}
-            </div>
+            {isLoading ? (
+              <Skeleton className="h-8 w-3/4" />
+            ) : (
+              <div className="text-lg sm:text-2xl font-bold">
+                {walletBalance ?? "₦0.00"}
+              </div>
+            )}
             <p className="text-xs text-primary-foreground/80">
-              +₦10,000 from last top-up
+              Available for vending
             </p>
           </CardContent>
         </Card>

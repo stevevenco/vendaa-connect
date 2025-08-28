@@ -218,6 +218,13 @@ export const getWalletBalance = (organizationId: string): Promise<{ balance: str
   return authApi<{ balance: string }>(`/${API_VERSION}/wallet/balance/${organizationId}/`);
 };
 
+export const createWallet = (organization_id: string): Promise<any> => {
+  return authApi<any>(`/${API_VERSION}/wallet/create/`, {
+    method: "POST",
+    body: JSON.stringify({ organization_id }),
+  });
+};
+
 export const initiateWalletFunding = (
   organizationId: string,
   paymentOption: 'online_checkout' | 'bank_transfer',

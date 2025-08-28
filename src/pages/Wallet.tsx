@@ -1,13 +1,16 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Wallet, Plus, ArrowUpDown, CreditCard, History } from "lucide-react";
-import { dummyWallet, dummyTransactions } from "@/data/dummyData";
+import { Wallet, Plus, ArrowUpDown, History } from "lucide-react";
+import { dummyTransactions } from "@/data/dummyData";
+import { useOrganizations } from "@/hooks/useOrganizations";
+import { useTopUp } from "@/hooks/useTopUp";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function WalletPage() {
+  const { walletBalance, isLoading } = useOrganizations();
+  const { openModal } = useTopUp();
   const recentTransactions = dummyTransactions.slice(0, 10);
 
   // Function to truncate text longer than 20 characters
@@ -26,8 +29,6 @@ export default function WalletPage() {
         </div>
       </div>
 
-      {/* Wallet Overview */}
-      {/* <div className="flex md:grid md:gap-4 md:grid-cols-2 lg:grid-cols-4 overflow-x-auto snap-x snap-mandatory space-x-4 md:space-x-0 pb-4"> */}
       <div className="w-full">
         <Card className="w-full min-w-[160px] snap-start md:min-w-0 bg-gradient-to-br from-primary to-primary-glow text-primary-foreground">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -37,9 +38,13 @@ export default function WalletPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-lg sm:text-2xl font-bold">
-              ₦{dummyWallet.balance.toLocaleString()}
-            </div>
+            {isLoading ? (
+              <Skeleton className="h-8 w-3/4" />
+            ) : (
+              <div className="text-lg sm:text-2xl font-bold">
+                {walletBalance ?? "₦0.00"}
+              </div>
+            )}
             <p className="text-xs text-primary-foreground/80 mt-1">
               Available for vending
             </p>
@@ -61,54 +66,17 @@ export default function WalletPage() {
                 Add Funds to Wallet
               </CardTitle>
               <CardDescription className="text-xs sm:text-sm">
-                Choose your preferred payment method to add funds.
+                Click the button below to add funds to your wallet.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="amount" className="text-xs sm:text-sm">Amount (NGN)</Label>
-                  <Input
-                    id="amount"
-                    type="number"
-                    placeholder="Enter amount"
-                    min="1000"
-                    step="100"
-                    className="text-sm"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Minimum top-up amount is ₦1,000
-                  </p>
-                </div>
-
-                <div className="grid gap-3">
-                  <Label className="text-xs sm:text-sm">Payment Method</Label>
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    <Button variant="outline" className="justify-start h-auto p-3 text-left">
-                      <CreditCard className="mr-2 h-4 w-4 flex-shrink-0" />
-                      <div>
-                        <div className="text-xs sm:text-sm font-medium">Bank Transfer</div>
-                        <div className="text-xs text-muted-foreground">
-                          Direct bank transfer - Instant
-                        </div>
-                      </div>
-                    </Button>
-                    <Button variant="outline" className="justify-start h-auto p-3 text-left">
-                      <CreditCard className="mr-2 h-4 w-4 flex-shrink-0" />
-                      <div>
-                        <div className="text-xs sm:text-sm font-medium">Debit Card</div>
-                        <div className="text-xs text-muted-foreground">
-                          Pay with debit card - Small fee
-                        </div>
-                      </div>
-                    </Button>
-                  </div>
-                </div>
-
-                <Button className="w-full bg-gradient-to-r from-primary to-primary-glow text-sm">
-                  Proceed to Payment
-                </Button>
-              </div>
+            <CardContent>
+              <Button
+                onClick={openModal}
+                className="w-full bg-gradient-to-r from-primary to-primary-glow text-sm"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Top Up Wallet
+              </Button>
             </CardContent>
           </Card>
         </TabsContent>

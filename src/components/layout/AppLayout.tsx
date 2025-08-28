@@ -3,6 +3,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 import { Header } from "./Header";
 import { OrganizationProvider } from "@/context/OrganizationContext.tsx";
+import { TopUpModal } from "@/components/TopUpModal";
 
 export function AppLayout() {
   return (
@@ -16,6 +17,7 @@ export function AppLayout() {
               <Outlet />
             </main>
           </div>
+          <TopUpModal />
         </div>
       </SidebarProvider>
     </OrganizationProvider>
