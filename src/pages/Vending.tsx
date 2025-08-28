@@ -11,16 +11,21 @@ import {
   Droplets, 
   Flame, 
   CreditCard, 
-  Key,
-  CheckCircle,
-  AlertTriangle,
-  RotateCcw
 } from "lucide-react";
 import { dummyMeters } from "@/data/dummyData";
+import EngineeringTokenCard from "@/components/EngineeringTokenCard";
+import RemoteOperationCard from "@/components/RemoteOperationCard";
 
 export default function VendingPage() {
   const [selectedMeter, setSelectedMeter] = useState("");
   const [amount, setAmount] = useState("");
+  const [activeTab, setActiveTab] = useState("credit"); // State for dropdown/tab selection
+
+  const tabOptions = [
+    { value: "credit", label: "Credit Purchase" },
+    { value: "engineering", label: "Engineering Tokens" },
+    { value: "remote", label: "Remote Operations" },
+  ];
 
   return (
     <div className="space-y-6">
@@ -33,7 +38,7 @@ export default function VendingPage() {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      {/* <div className="grid gap-4 md:grid-cols-3">
         <Card className="bg-gradient-to-br from-yellow-500/10 to-yellow-600/10 border-yellow-200">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-yellow-700">
@@ -76,9 +81,106 @@ export default function VendingPage() {
             <p className="text-sm text-muted-foreground">Active meters</p>
           </CardContent>
         </Card>
+      </div> */}
+
+      {/* Mobile View: Dropdown */}
+      <div className="md:hidden space-y-4">
+        <Select value={activeTab} onValueChange={setActiveTab}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select operation" />
+          </SelectTrigger>
+          <SelectContent>
+            {tabOptions.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {activeTab === "credit" && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CreditCard className="h-5 w-5" />
+                Generate Utility Credits
+              </CardTitle>
+              <CardDescription>
+                Purchase utility credits for electricity, water, or gas meters.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>Select Meter</Label>
+                  <Select value={selectedMeter} onValueChange={setSelectedMeter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose meter number" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {dummyMeters.map((meter) => (
+                        <SelectItem key={meter.id} value={meter.meterNumber}>
+                          {meter.meterNumber} - {meter.customerName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Credit Amount (NGN)</Label>
+                  <Input
+                    type="number"
+                    placeholder="Enter amount"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    min="100"
+                    step="50"
+                  />
+                </div>
+              </div>
+
+              {selectedMeter && (
+                <Card className="bg-muted/50">
+                  <CardContent className="pt-4">
+                    <h4 className="font-medium mb-2">Meter Information</h4>
+                    <div className="grid gap-2 text-sm">
+                      <div className="flex justify-between">
+                        <span>Customer:</span>
+                        <span>{dummyMeters.find(m => m.meterNumber === selectedMeter)?.customerName}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Current Balance:</span>
+                        <span>₦{dummyMeters.find(m => m.meterNumber === selectedMeter)?.balance.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Meter Type:</span>
+                        <Badge variant="outline" className="capitalize">
+                          {dummyMeters.find(m => m.meterNumber === selectedMeter)?.meterType}
+                        </Badge>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              <Button 
+                className="w-full bg-gradient-to-r from-primary to-primary-glow"
+                disabled={!selectedMeter || !amount}
+              >
+                Generate Credit Token
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {activeTab === "engineering" && <EngineeringTokenCard />}
+
+        {activeTab === "remote" && <RemoteOperationCard />}
       </div>
 
-      <Tabs defaultValue="credit" className="space-y-4">
+      {/* Desktop View: Tabs */}
+      <Tabs defaultValue="credit" className="hidden md:block space-y-4" onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="credit">Credit Purchase</TabsTrigger>
           <TabsTrigger value="engineering">Engineering Tokens</TabsTrigger>
@@ -162,219 +264,11 @@ export default function VendingPage() {
         </TabsContent>
 
         <TabsContent value="engineering" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Key className="h-5 w-5" />
-                  Key Change Token (KCT)
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Select>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select meter" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {dummyMeters.map((meter) => (
-                      <SelectItem key={meter.id} value={meter.meterNumber}>
-                        {meter.meterNumber} - {meter.customerName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button className="w-full">Generate KCT</Button>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <RotateCcw className="h-5 w-5" />
-                  Clear Credit
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Select>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select meter" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {dummyMeters.map((meter) => (
-                      <SelectItem key={meter.id} value={meter.meterNumber}>
-                        {meter.meterNumber} - {meter.customerName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button variant="destructive" className="w-full">Clear Credit</Button>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <AlertTriangle className="h-5 w-5" />
-                  Clear Tamper
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Select>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select meter" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {dummyMeters.map((meter) => (
-                      <SelectItem key={meter.id} value={meter.meterNumber}>
-                        {meter.meterNumber} - {meter.customerName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button variant="secondary" className="w-full">Clear Tamper</Button>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <CheckCircle className="h-5 w-5" />
-                  Mode Change
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Select>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select meter" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {dummyMeters.map((meter) => (
-                      <SelectItem key={meter.id} value={meter.meterNumber}>
-                        {meter.meterNumber} - {meter.customerName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <div className="flex gap-2">
-                  <Button variant="outline" className="flex-1">Prepaid Mode</Button>
-                  <Button variant="outline" className="flex-1">Postpaid Mode</Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          <EngineeringTokenCard />
         </TabsContent>
 
         <TabsContent value="remote" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Remote Balance Check</CardTitle>
-                <CardDescription>
-                  Retrieve current meter balance remotely
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Select>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select meter" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {dummyMeters.map((meter) => (
-                      <SelectItem key={meter.id} value={meter.meterNumber}>
-                        {meter.meterNumber} - {meter.customerName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button className="w-full">Check Balance</Button>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Consumption Reading</CardTitle>
-                <CardDescription>
-                  Get meter consumption data
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Select>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select meter" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {dummyMeters.map((meter) => (
-                      <SelectItem key={meter.id} value={meter.meterNumber}>
-                        {meter.meterNumber} - {meter.customerName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button className="w-full">Read Consumption</Button>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Remote Disconnect/Reconnect</CardTitle>
-                <CardDescription>
-                  Control meter relay status
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Select>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select meter" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {dummyMeters.map((meter) => (
-                      <SelectItem key={meter.id} value={meter.meterNumber}>
-                        {meter.meterNumber} - {meter.customerName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <div className="flex gap-2">
-                  <Button variant="destructive" className="flex-1">Disconnect</Button>
-                  <Button variant="default" className="flex-1">Reconnect</Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Tariff Management</CardTitle>
-                <CardDescription>
-                  Change meter tariff settings
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Select>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select meter" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {dummyMeters.map((meter) => (
-                      <SelectItem key={meter.id} value={meter.meterNumber}>
-                        {meter.meterNumber} - {meter.customerName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select tariff" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="T1">Tariff 1 (Residential)</SelectItem>
-                    <SelectItem value="T2">Tariff 2 (Commercial)</SelectItem>
-                    <SelectItem value="T3">Tariff 3 (Industrial)</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button className="w-full">Update Tariff</Button>
-              </CardContent>
-            </Card>
-          </div>
+          <RemoteOperationCard />
         </TabsContent>
       </Tabs>
     </div>
