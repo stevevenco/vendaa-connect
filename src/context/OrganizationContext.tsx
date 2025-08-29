@@ -1,12 +1,14 @@
 import { useState, useEffect, useCallback } from "react";
 import { Organization, User } from "@/types";
 import { getMe, getWalletBalance, createWallet, ApiError } from "@/services/api";
+import { useAuth } from "@/hooks/useAuth";
 import { OrganizationContext } from "./organizationContext";
 import { OrganizationProviderProps } from "./organizationContext.types";
 
 export const OrganizationProvider = ({
   children,
 }: OrganizationProviderProps) => {
+  const { logout } = useAuth();
   const [user, setUser] = useState<User | null>(null);
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [selectedOrganization, setSelectedOrganization] =
@@ -61,7 +63,11 @@ export const OrganizationProvider = ({
           }
         }
       } catch (error) {
-        console.error("Failed to fetch organizations", error);
+        if (error instanceof ApiError && error.status === 401) {
+          logout();
+        } else {
+          console.error("Failed to fetch organizations", error);
+        }
       } finally {
         setIsLoading(false);
       }

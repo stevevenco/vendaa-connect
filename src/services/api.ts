@@ -14,6 +14,7 @@ import {
   OrganizationMember,
   TAddMemberSchema,
   TUpdateMemberRoleSchema,
+  TResetPasswordSchema,
 } from "@/types";
 
 const LOCAL_API_URL: string = "http://localhost:8000";
@@ -93,6 +94,16 @@ export const register = (
   data: TRegisterSchema
 ): Promise<RegisterResponse> => {
   return api<RegisterResponse>(`/${API_VERSION}/auth/register/`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  });
+};
+
+export const resetPassword = (data: TResetPasswordSchema): Promise<{ detail: string }> => {
+  return api<{ detail: string }>(`/${API_VERSION}/auth/reset-password/`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
