@@ -16,12 +16,13 @@ import {
   TUpdateMemberRoleSchema,
 } from "@/types";
 
-const LOCAL_API_URL: string = "http://localhost:8000";
-const STAGING_API_URL: string = "https://vendaa-be.onrender.com";
-const PRODUCTION_API_URL: string = "https://api.example.com";
-const API_VERSION: string = "api/v1";
+const LOCAL_API_URL: string = import.meta.env.VITE_LOCAL_API_URL || "http://localhost:8000";
+const STAGING_API_URL: string = import.meta.env.VITE_STAGING_API_URL || "https://vendaa-be.onrender.com";
+const PRODUCTION_API_URL: string = import.meta.env.VITE_PRODUCTION_API_URL || "https://api.example.com";
+const API_VERSION: string = import.meta.env.VITE_API_VERSION || "api/v1";
 
-const env: string = import.meta.env.VITE_ENV || "staging";
+const env: string = import.meta.env.VITE_ENV || "development";
+
 let API_URL: string = "";
 if (env === "development") {
   API_URL = LOCAL_API_URL;
