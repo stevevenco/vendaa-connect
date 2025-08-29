@@ -2,14 +2,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Wallet, Plus, ArrowUpDown, History } from "lucide-react";
+import { Wallet, Plus, ArrowUpDown, History, RefreshCw } from "lucide-react";
 import { dummyTransactions } from "@/data/dummyData";
 import { useOrganizations } from "@/hooks/useOrganizations";
 import { useTopUp } from "@/hooks/useTopUp";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function WalletPage() {
-  const { walletBalance, isLoading } = useOrganizations();
+  const {
+    walletBalance,
+    isLoading,
+    selectedOrganization,
+    fetchWalletBalance,
+    isBalanceLoading,
+  } = useOrganizations();
   const { openModal } = useTopUp();
   const recentTransactions = dummyTransactions.slice(0, 10);
 
@@ -36,6 +42,15 @@ export default function WalletPage() {
               <Wallet className="h-4 w-4" />
               Current Balance
             </CardTitle>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 text-primary-foreground/80 hover:text-primary-foreground"
+              onClick={() => selectedOrganization && fetchWalletBalance(selectedOrganization.uuid)}
+              disabled={isBalanceLoading}
+            >
+              <RefreshCw className={`h-4 w-4 ${isBalanceLoading ? 'animate-spin' : ''}`} />
+            </Button>
           </CardHeader>
           <CardContent>
             {isLoading ? (
