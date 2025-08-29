@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Wallet, Plus } from "lucide-react";
+import { Wallet, Plus, RefreshCw } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
 import { dummyReports, dummyTransactions, dummyMeters } from "@/data/dummyData";
 import { useOrganizations } from "@/hooks/useOrganizations";
@@ -18,7 +18,13 @@ const chartData = [
 ];
 
 export default function Dashboard() {
-  const { walletBalance, isLoading } = useOrganizations();
+  const {
+    walletBalance,
+    isLoading,
+    selectedOrganization,
+    fetchWalletBalance,
+    isBalanceLoading,
+  } = useOrganizations();
   const { openModal } = useTopUp();
   const recentVends = dummyTransactions.filter(t => t.type === 'credit_purchase').slice(0, 5);
   const activeMeters = dummyMeters.filter(m => m.status === 'active').length;
@@ -53,7 +59,18 @@ export default function Dashboard() {
         <Card className="w-full bg-gradient-to-br from-primary to-primary-glow text-primary-foreground">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-xs sm:text-sm font-medium">Wallet Balance</CardTitle>
-            <Wallet className="h-4 w-4" />
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 text-primary-foreground/80 hover:text-primary-foreground"
+                onClick={() => selectedOrganization && fetchWalletBalance(selectedOrganization.uuid)}
+                disabled={isBalanceLoading}
+              >
+                <RefreshCw className={`h-4 w-4 ${isBalanceLoading ? 'animate-spin' : ''}`} />
+              </Button>
+              <Wallet className="h-4 w-4" />
+            </div>
           </CardHeader>
           <CardContent>
             {isLoading ? (

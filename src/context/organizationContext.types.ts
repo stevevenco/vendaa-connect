@@ -7,6 +7,8 @@ export interface OrganizationContextType {
   isLoading: boolean;
   user: User | null;
   walletBalance: string | null;
+  fetchWalletBalance: (organizationId: string) => void;
+  isBalanceLoading: boolean;
 }
 
 export interface OrganizationProviderProps {
