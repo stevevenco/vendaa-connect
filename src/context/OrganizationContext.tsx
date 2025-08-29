@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Organization, User } from "@/types";
-import { getMe, getWalletBalance, createWallet } from "@/services/api";
+import { getMe, getWalletBalance, createWallet, ApiError } from "@/services/api";
 import { OrganizationContext } from "./organizationContext";
 import { OrganizationProviderProps } from "./organizationContext.types";
 
@@ -13,13 +13,15 @@ export const OrganizationProvider = ({
     useState<Organization | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [walletBalance, setWalletBalance] = useState<string | null>(null);
+  const [isBalanceLoading, setIsBalanceLoading] = useState(false);
 
   const fetchWalletBalance = useCallback(async (organizationId: string) => {
+    setIsBalanceLoading(true);
     try {
       const balanceData = await getWalletBalance(organizationId);
       setWalletBalance(balanceData.balance);
-    } catch (error: any) {
-      if (error.message.includes("404")) {
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 404) {
         try {
           await createWallet(organizationId);
           const balanceData = await getWalletBalance(organizationId);
@@ -32,6 +34,8 @@ export const OrganizationProvider = ({
         console.error("Failed to fetch wallet balance:", error);
         setWalletBalance(null);
       }
+    } finally {
+      setIsBalanceLoading(false);
     }
   }, []);
 
@@ -75,6 +79,8 @@ export const OrganizationProvider = ({
         isLoading,
         user,
         walletBalance,
+        fetchWalletBalance,
+        isBalanceLoading,
       }}
     >
       {children}

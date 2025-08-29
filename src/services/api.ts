@@ -33,6 +33,14 @@ if (env === "development") {
 
 const getAuthToken: () => string | null = () => localStorage.getItem("access");
 
+export class ApiError extends Error {
+  status: number;
+  constructor(message: string, status: number) {
+    super(message);
+    this.status = status;
+  }
+}
+
 const api = async <T>(
   url: string,
   options: RequestInit = {}
@@ -41,13 +49,13 @@ const api = async <T>(
 
   if (!response.ok) {
     const errorData = await response.json();
-    throw new Error(
+    const message =
       errorData.detail ||
-        (errorData.non_field_errors && errorData.non_field_errors[0]) ||
-        (errorData.email && errorData.email[0]) ||
-        (errorData.error && errorData.error[0]) ||
-        "Dang! Something went wrong, I wish I could explain, but I don't want to bore you with the details, check back later I promise to have it fixed. 💚"
-    );
+      (errorData.non_field_errors && errorData.non_field_errors[0]) ||
+      (errorData.email && errorData.email[0]) ||
+      (errorData.error && errorData.error[0]) ||
+      "Dang! Something went wrong, I wish I could explain, but I don't want to bore you with the details, check back later I promise to have it fixed. 💚";
+    throw new ApiError(message, response.status);
   }
 
   if (response.status === 204) {
