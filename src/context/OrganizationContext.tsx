@@ -47,8 +47,18 @@ export const OrganizationProvider = ({
         if (userData.organizations && userData.organizations.length > 0) {
           const orgs = userData.organizations;
           setOrganizations(orgs);
-          setSelectedOrganization(orgs[0]);
-          fetchWalletBalance(orgs[0].uuid);
+
+          const savedOrgId = localStorage.getItem('selectedOrganizationId');
+          const savedOrg = savedOrgId ? orgs.find(org => org.uuid === savedOrgId) : null;
+
+          if (savedOrg) {
+            setSelectedOrganization(savedOrg);
+            fetchWalletBalance(savedOrg.uuid);
+          } else {
+            setSelectedOrganization(orgs[0]);
+            fetchWalletBalance(orgs[0].uuid);
+            localStorage.setItem('selectedOrganizationId', orgs[0].uuid);
+          }
         }
       } catch (error) {
         console.error("Failed to fetch organizations", error);
@@ -67,6 +77,7 @@ export const OrganizationProvider = ({
     if (organization) {
       setSelectedOrganization(organization);
       fetchWalletBalance(organization.uuid);
+      localStorage.setItem('selectedOrganizationId', organization.uuid);
     }
   };
 
