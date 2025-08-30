@@ -21,6 +21,7 @@ import VerifyOtpPage from "./pages/VerifyOtp";
 import AuthCallbackPage from "./pages/AuthCallback";
 import CreateOrganizationPage from "./pages/CreateOrganization";
 import AcceptInvitePage from "./pages/AcceptInvite";
+import ResetPasswordPage from "./pages/ResetPassword";
 
 const queryClient = new QueryClient();
 
@@ -36,6 +37,7 @@ const App = () => (
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/verify-otp" element={<VerifyOtpPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/accept-invite/:token" element={<AcceptInvitePage />} />
           <Route element={<ProtectedRoute />}>
             <Route path="/auth-callback" element={<AuthCallbackPage />} />

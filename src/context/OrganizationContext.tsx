@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { Organization, User } from "@/types";
-import { getMe, getWalletBalance, createWallet, ApiError } from "@/services/api";
+import { Organization, User, Transaction } from "@/types";
+import { getMe, getWalletBalance, createWallet, ApiError, getTransactions } from "@/services/api";
 import { useAuth } from "@/hooks/useAuth";
 import { OrganizationContext } from "./organizationContext";
 import { OrganizationProviderProps } from "./organizationContext.types";
@@ -16,6 +16,8 @@ export const OrganizationProvider = ({
   const [isLoading, setIsLoading] = useState(true);
   const [walletBalance, setWalletBalance] = useState<string | null>(null);
   const [isBalanceLoading, setIsBalanceLoading] = useState(false);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [isTransactionsLoading, setIsTransactionsLoading] = useState(false);
 
   const fetchWalletBalance = useCallback(async (organizationId: string) => {
     setIsBalanceLoading(true);
@@ -41,6 +43,19 @@ export const OrganizationProvider = ({
     }
   }, []);
 
+  const fetchTransactions = useCallback(async (organizationId: string) => {
+    setIsTransactionsLoading(true);
+    try {
+      const transactionsData = await getTransactions(organizationId);
+      setTransactions(transactionsData);
+    } catch (error) {
+      console.error("Failed to fetch transactions:", error);
+      setTransactions([]);
+    } finally {
+      setIsTransactionsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
@@ -56,9 +71,11 @@ export const OrganizationProvider = ({
           if (savedOrg) {
             setSelectedOrganization(savedOrg);
             fetchWalletBalance(savedOrg.uuid);
+            fetchTransactions(savedOrg.uuid);
           } else {
             setSelectedOrganization(orgs[0]);
             fetchWalletBalance(orgs[0].uuid);
+            fetchTransactions(orgs[0].uuid);
             localStorage.setItem('selectedOrganizationId', orgs[0].uuid);
           }
         }
@@ -74,7 +91,7 @@ export const OrganizationProvider = ({
     };
 
     fetchInitialData();
-  }, [fetchWalletBalance]);
+  }, [fetchWalletBalance, fetchTransactions]);
 
   const switchOrganization = (organizationUuid: string) => {
     const organization = organizations.find(
@@ -83,6 +100,7 @@ export const OrganizationProvider = ({
     if (organization) {
       setSelectedOrganization(organization);
       fetchWalletBalance(organization.uuid);
+      fetchTransactions(organization.uuid);
       localStorage.setItem('selectedOrganizationId', organization.uuid);
     }
   };
@@ -98,6 +116,9 @@ export const OrganizationProvider = ({
         walletBalance,
         fetchWalletBalance,
         isBalanceLoading,
+        transactions,
+        fetchTransactions,
+        isTransactionsLoading,
       }}
     >
       {children}

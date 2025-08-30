@@ -156,6 +156,19 @@ export const UpdateMemberRoleSchema = z.object({
 
 export type TUpdateMemberRoleSchema = z.infer<typeof UpdateMemberRoleSchema>;
 
+export const ResetPasswordSchema = z
+  .object({
+    email: z.string().email(),
+    otp_code: z.string(),
+    new_password: z.string().min(8, "Password must be at least 8 characters."),
+    confirm_password: z.string(),
+  })
+  .refine((data) => data.new_password === data.confirm_password, {
+    message: "Passwords do not match.",
+    path: ["confirm_password"],
+  });
+export type TResetPasswordSchema = z.infer<typeof ResetPasswordSchema>;
+
 export interface OrganizationInvite {
   token: string;
   email: string;
@@ -191,3 +204,11 @@ export interface BankTransferPaymentOption extends BasePaymentOption {
 }
 
 export type PaymentOption = OnlineCheckoutPaymentOption | BankTransferPaymentOption;
+
+export interface Transaction {
+  transaction_id: string;
+  title: string;
+  amount: string;
+  status: string;
+  created_at: string;
+}

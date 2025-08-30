@@ -14,6 +14,7 @@ import {
   OrganizationMember,
   TAddMemberSchema,
   TUpdateMemberRoleSchema,
+  TResetPasswordSchema,
 } from "@/types";
 
 const LOCAL_API_URL: string = import.meta.env.VITE_LOCAL_API_URL || "http://localhost:8000";
@@ -94,6 +95,16 @@ export const register = (
   data: TRegisterSchema
 ): Promise<RegisterResponse> => {
   return api<RegisterResponse>(`/${API_VERSION}/auth/register/`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  });
+};
+
+export const resetPassword = (data: TResetPasswordSchema): Promise<{ detail: string }> => {
+  return api<{ detail: string }>(`/${API_VERSION}/auth/reset-password/`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -242,4 +253,8 @@ export const initiateWalletFunding = (
   return authApi<PaymentOption[]>(
     `/${API_VERSION}/wallet/initiate-payment/${organizationId}?payment_option=${paymentOption}&amount=${amount}`
   );
+};
+
+export const getTransactions = (organizationId: string): Promise<Transaction[]> => {
+  return authApi<Transaction[]>(`/${API_VERSION}/wallet/transactions/${organizationId}/`);
 };

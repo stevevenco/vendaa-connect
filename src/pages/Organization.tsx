@@ -266,6 +266,226 @@ export default function OrganizationPage() {
     return text.length > maxLength ? `${text.substring(0, maxLength)}...` : text;
   };
 
+  const renderMembers = () => {
+    if (isLoadingMembers) {
+      return <p className="text-xs sm:text-sm">Loading members...</p>;
+    }
+
+    if (!members || members.length === 0) {
+      return (
+        <Alert>
+          <AlertDescription>
+            No members found in this organization.
+          </AlertDescription>
+        </Alert>
+      );
+    }
+
+    return (
+      <>
+        {/* Mobile View: Cards */}
+        <div className="grid gap-4 md:hidden">
+          {members?.map((member) => (
+            <Card key={member.uuid} className="p-4 space-y-4">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="font-semibold">
+                    {member.user.first_name} {member.user.last_name}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {member.user.email}
+                  </p>
+                </div>
+                <p className="text-sm capitalize bg-gray-100 px-2 py-1 rounded-md">
+                  {member.role}
+                </p>
+              </div>
+
+              {editingMember?.uuid === member.uuid ? (
+                <Form {...updateMemberRoleForm}>
+                  <form
+                    onSubmit={updateMemberRoleForm.handleSubmit(
+                      onUpdateMemberRoleSubmit
+                    )}
+                    className="space-y-3"
+                  >
+                    <FormField
+                      control={updateMemberRoleForm.control}
+                      name="role"
+                      defaultValue={member.role}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs sm:text-sm">Role</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select a role" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="admin">Admin</SelectItem>
+                              <SelectItem value="member">Member</SelectItem>
+                              <SelectItem value="owner">Owner</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </FormItem>
+                      )}
+                    />
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        type="submit"
+                        size="sm"
+                        disabled={updateMemberRoleMutation.isPending}
+                      >
+                        Save
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setEditingMember(null)}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </form>
+                </Form>
+              ) : (
+                <div className="flex flex-col space-y-2">
+                  <p className="text-sm text-muted-foreground">
+                    Joined: {new Date(member.joined_at).toLocaleDateString()}
+                  </p>
+                  <div className="flex gap-2 justify-end">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setEditingMember(member)}
+                    >
+                      Edit Role
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => removeMemberMutation.mutate(member.uuid)}
+                      disabled={removeMemberMutation.isPending}
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </Card>
+          ))}
+        </div>
+
+        {/* Desktop View: Table */}
+        <Table className="hidden md:table">
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[200px]">Name</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead className="w-[120px]">Role</TableHead>
+              <TableHead className="w-[150px]">Joined At</TableHead>
+              <TableHead className="text-right w-[200px]">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {members?.map((member) => (
+              <TableRow key={member.uuid}>
+                <TableCell className="font-medium">
+                  {truncateText(
+                    `${member.user.first_name} ${member.user.last_name}`
+                  )}
+                </TableCell>
+                <TableCell>{truncateText(member.user.email)}</TableCell>
+                <TableCell className="capitalize">
+                  {editingMember?.uuid === member.uuid ? (
+                    <Form {...updateMemberRoleForm}>
+                      <form
+                        onSubmit={updateMemberRoleForm.handleSubmit(
+                          onUpdateMemberRoleSubmit
+                        )}
+                        className="flex items-center gap-2"
+                      >
+                        <FormField
+                          control={updateMemberRoleForm.control}
+                          name="role"
+                          defaultValue={member.role}
+                          render={({ field }) => (
+                            <FormItem>
+                              <Select
+                                onValueChange={field.onChange}
+                                defaultValue={field.value}
+                              >
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select a role" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="admin">Admin</SelectItem>
+                                  <SelectItem value="member">
+                                    Member
+                                  </SelectItem>
+                                  <SelectItem value="owner">Owner</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </FormItem>
+                          )}
+                        />
+                        <Button
+                          type="submit"
+                          size="sm"
+                          disabled={updateMemberRoleMutation.isPending}
+                        >
+                          Save
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setEditingMember(null)}
+                        >
+                          Cancel
+                        </Button>
+                      </form>
+                    </Form>
+                  ) : (
+                    truncateText(member.role)
+                  )}
+                </TableCell>
+                <TableCell>
+                  {new Date(member.joined_at).toLocaleDateString()}
+                </TableCell>
+                <TableCell className="text-right space-x-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setEditingMember(member)}
+                    disabled={editingMember?.uuid === member.uuid}
+                  >
+                    Edit Role
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => removeMemberMutation.mutate(member.uuid)}
+                    disabled={removeMemberMutation.isPending}
+                  >
+                    Remove
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </>
+    );
+  };
+
   const renderInvitesList = (invites: OrganizationInvite[] | undefined, type: 'received' | 'sent') => {
     if (!invites) return null;
     
@@ -273,7 +493,7 @@ export default function OrganizationPage() {
       return invites.map((invite) => (
         <Card key={invite.token}>
           <CardContent className="pt-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
                 <p className="font-medium">{invite.organization_name}</p>
                 <div className="space-y-1">
@@ -284,7 +504,7 @@ export default function OrganizationPage() {
                   </p>
                 </div>
               </div>
-              <div className="space-x-2">
+              <div className="flex flex-wrap gap-2">
                 <Button
                   onClick={() => acceptInvitationMutation.mutate(invite.token)}
                   disabled={acceptInvitationMutation.isPending}
@@ -309,7 +529,7 @@ export default function OrganizationPage() {
       return invites.map((invite) => (
         <Card key={invite.token}>
           <CardContent className="pt-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
                 <p className="font-medium">{invite.email}</p>
                 <div className="space-y-1">
@@ -461,94 +681,7 @@ export default function OrganizationPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {isLoadingMembers ? (
-                <p className="text-xs sm:text-sm">Loading members...</p>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="text-xs sm:text-sm">Name</TableHead>
-                      <TableHead className="text-xs sm:text-sm">Email</TableHead>
-                      <TableHead className="text-xs sm:text-sm">Role</TableHead>
-                      <TableHead className="text-xs sm:text-sm">Joined At</TableHead>
-                      <TableHead className="text-xs sm:text-sm">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {members?.map((member) => (
-                      <TableRow key={member.uuid}>
-                        <TableCell className="text-xs sm:text-sm">
-                          {truncateText(`${member.user.first_name} ${member.user.last_name}`)}
-                        </TableCell>
-                        <TableCell className="text-xs sm:text-sm">
-                          {truncateText(member.user.email)}
-                        </TableCell>
-                        <TableCell className="text-xs sm:text-sm">
-                          {editingMember?.uuid === member.uuid ? (
-                            <Form {...updateMemberRoleForm}>
-                              <form
-                                onSubmit={updateMemberRoleForm.handleSubmit(onUpdateMemberRoleSubmit)}
-                                className="flex items-center gap-2"
-                              >
-                                <FormField
-                                  control={updateMemberRoleForm.control}
-                                  name="role"
-                                  defaultValue={member.role}
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                        <FormControl>
-                                          <SelectTrigger>
-                                            <SelectValue placeholder="Select a role" />
-                                          </SelectTrigger>
-                                        </FormControl>
-                                        <SelectContent>
-                                          <SelectItem value="admin">Admin</SelectItem>
-                                          <SelectItem value="member">Member</SelectItem>
-                                          <SelectItem value="owner">Owner</SelectItem>
-                                        </SelectContent>
-                                      </Select>
-                                    </FormItem>
-                                  )}
-                                />
-                                <Button type="submit" size="sm" disabled={updateMemberRoleMutation.isPending}>
-                                  Save
-                                </Button>
-                                <Button type="button" size="sm" variant="outline" onClick={() => setEditingMember(null)}>
-                                  Cancel
-                                </Button>
-                              </form>
-                            </Form>
-                          ) : (
-                            truncateText(member.role)
-                          )}
-                        </TableCell>
-                        <TableCell className="text-xs sm:text-sm">
-                          {new Date(member.joined_at).toLocaleDateString()}
-                        </TableCell>
-                        <TableCell className="space-x-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setEditingMember(member)}
-                            disabled={editingMember?.uuid === member.uuid}
-                          >
-                            Edit Role
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => removeMemberMutation.mutate(member.uuid)}
-                            disabled={removeMemberMutation.isPending}
-                          >
-                            Remove
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
+              {renderMembers()}
             </CardContent>
           </Card>
         )}
@@ -676,94 +809,7 @@ export default function OrganizationPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {isLoadingMembers ? (
-                <p className="text-xs sm:text-sm">Loading members...</p>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="text-xs sm:text-sm">Name</TableHead>
-                      <TableHead className="text-xs sm:text-sm">Email</TableHead>
-                      <TableHead className="text-xs sm:text-sm">Role</TableHead>
-                      <TableHead className="text-xs sm:text-sm">Joined At</TableHead>
-                      <TableHead className="text-xs sm:text-sm">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {members?.map((member) => (
-                      <TableRow key={member.uuid}>
-                        <TableCell className="text-xs sm:text-sm">
-                          {truncateText(`${member.user.first_name} ${member.user.last_name}`)}
-                        </TableCell>
-                        <TableCell className="text-xs sm:text-sm">
-                          {truncateText(member.user.email)}
-                        </TableCell>
-                        <TableCell className="text-xs sm:text-sm">
-                          {editingMember?.uuid === member.uuid ? (
-                            <Form {...updateMemberRoleForm}>
-                              <form
-                                onSubmit={updateMemberRoleForm.handleSubmit(onUpdateMemberRoleSubmit)}
-                                className="flex items-center gap-2"
-                              >
-                                <FormField
-                                  control={updateMemberRoleForm.control}
-                                  name="role"
-                                  defaultValue={member.role}
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                        <FormControl>
-                                          <SelectTrigger>
-                                            <SelectValue placeholder="Select a role" />
-                                          </SelectTrigger>
-                                        </FormControl>
-                                        <SelectContent>
-                                          <SelectItem value="admin">Admin</SelectItem>
-                                          <SelectItem value="member">Member</SelectItem>
-                                          <SelectItem value="owner">Owner</SelectItem>
-                                        </SelectContent>
-                                      </Select>
-                                    </FormItem>
-                                  )}
-                                />
-                                <Button type="submit" size="sm" disabled={updateMemberRoleMutation.isPending}>
-                                  Save
-                                </Button>
-                                <Button type="button" size="sm" variant="outline" onClick={() => setEditingMember(null)}>
-                                  Cancel
-                                </Button>
-                              </form>
-                            </Form>
-                          ) : (
-                            truncateText(member.role)
-                          )}
-                        </TableCell>
-                        <TableCell className="text-xs sm:text-sm">
-                          {new Date(member.joined_at).toLocaleDateString()}
-                        </TableCell>
-                        <TableCell className="space-x-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setEditingMember(member)}
-                            disabled={editingMember?.uuid === member.uuid}
-                          >
-                            Edit Role
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => removeMemberMutation.mutate(member.uuid)}
-                            disabled={removeMemberMutation.isPending}
-                          >
-                            Remove
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
+              {renderMembers()}
             </CardContent>
           </Card>
         </TabsContent>
