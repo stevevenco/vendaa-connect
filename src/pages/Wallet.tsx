@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Wallet, Plus, ArrowUpDown, History, RefreshCw } from "lucide-react";
-import { dummyTransactions } from "@/data/dummyData";
 import { useOrganizations } from "@/hooks/useOrganizations";
 import { useTopUp } from "@/hooks/useTopUp";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -15,9 +14,11 @@ export default function WalletPage() {
     selectedOrganization,
     fetchWalletBalance,
     isBalanceLoading,
+    transactions,
+    isTransactionsLoading,
+    fetchTransactions,
   } = useOrganizations();
   const { openModal } = useTopUp();
-  const recentTransactions = dummyTransactions.slice(0, 10);
 
   // Function to truncate text longer than 20 characters
   const truncateText = (text: string, maxLength: number = 20) => {
@@ -99,47 +100,84 @@ export default function WalletPage() {
         <TabsContent value="history" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-                <History className="h-4 w-4" />
-                Transaction History
-              </CardTitle>
-              <CardDescription className="text-xs sm:text-sm">
-                View all your wallet transactions and their status.
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                    <History className="h-4 w-4" />
+                    Transaction History
+                  </CardTitle>
+                  <CardDescription className="text-xs sm:text-sm">
+                    View all your wallet transactions and their status.
+                  </CardDescription>
+                </div>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => selectedOrganization && fetchTransactions(selectedOrganization.uuid)}
+                  disabled={isTransactionsLoading}
+                >
+                  <RefreshCw className={`h-4 w-4 ${isTransactionsLoading ? 'animate-spin' : ''}`} />
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {recentTransactions.map((transaction) => (
-                  <div
-                    key={transaction.id}
-                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                        <ArrowUpDown className="h-4 w-4 text-primary" />
+              {isTransactionsLoading ? (
+                <div className="space-y-4">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="flex items-center gap-4">
+                        <Skeleton className="h-10 w-10 rounded-full" />
+                        <div className="space-y-2">
+                          <Skeleton className="h-4 w-[150px]" />
+                          <Skeleton className="h-4 w-[200px]" />
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-xs sm:text-sm font-medium">{truncateText(transaction.description)}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(transaction.date).toLocaleDateString()} at{" "}
-                          {new Date(transaction.date).toLocaleTimeString()}
+                      <div className="text-right space-y-2">
+                        <Skeleton className="h-5 w-[80px] mb-1" />
+                        <Skeleton className="h-4 w-[100px]" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {transactions.map((transaction) => (
+                    <div
+                      key={transaction.transaction_id}
+                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                          <ArrowUpDown className="h-4 w-4 text-primary" />
+                        </div>
+                        <div>
+                          <p className="text-xs sm:text-sm font-medium">{truncateText(transaction.title)}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(transaction.created_at).toLocaleDateString()} at{" "}
+                            {new Date(transaction.created_at).toLocaleTimeString()}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <Badge
+                          variant={transaction.status === 'success' ? 'default' : 'secondary'}
+                          className="mb-1 text-xs sm:text-sm"
+                        >
+                          {transaction.amount}
+                        </Badge>
+                        <p className="text-xs capitalize"
+                          style={{
+                            color: transaction.status === 'success' ? 'green' : transaction.status === 'failed' ? 'red' : 'orange'
+                          }}
+                        >
+                          {transaction.status}
                         </p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <Badge 
-                        variant={transaction.type === 'wallet_topup' ? 'default' : 'secondary'}
-                        className="mb-1 text-xs sm:text-sm"
-                      >
-                        {transaction.type === 'wallet_topup' ? '+' : '-'}₦{transaction.amount.toLocaleString()}
-                      </Badge>
-                      <p className="text-xs text-muted-foreground">
-                        Balance: ₦{transaction.balance.toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

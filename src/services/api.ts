@@ -254,3 +254,7 @@ export const initiateWalletFunding = (
     `/${API_VERSION}/wallet/initiate-payment/${organizationId}?payment_option=${paymentOption}&amount=${amount}`
   );
 };
+
+export const getTransactions = (organizationId: string): Promise<Transaction[]> => {
+  return authApi<Transaction[]>(`/${API_VERSION}/wallet/transactions/${organizationId}/`);
+};

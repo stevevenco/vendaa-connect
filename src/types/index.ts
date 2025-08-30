@@ -204,3 +204,11 @@ export interface BankTransferPaymentOption extends BasePaymentOption {
 }
 
 export type PaymentOption = OnlineCheckoutPaymentOption | BankTransferPaymentOption;
+
+export interface Transaction {
+  transaction_id: string;
+  title: string;
+  amount: string;
+  status: string;
+  created_at: string;
+}
