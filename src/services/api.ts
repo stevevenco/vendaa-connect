@@ -15,6 +15,8 @@ import {
   TAddMemberSchema,
   TUpdateMemberRoleSchema,
   TResetPasswordSchema,
+  Meter,
+  TCreateMeterSchema,
 } from "@/types";
 
 const LOCAL_API_URL: string = import.meta.env.VITE_LOCAL_API_URL || "http://localhost:8000";
@@ -257,4 +259,48 @@ export const initiateWalletFunding = (
 
 export const getTransactions = (organizationId: string): Promise<Transaction[]> => {
   return authApi<Transaction[]>(`/${API_VERSION}/wallet/transactions/${organizationId}/`);
+};
+
+// Meter Related Endpoints
+export const getMeters = (orgId: string): Promise<Meter[]> => {
+  return authApi<Meter[]>(`/${API_VERSION}/organizations/${orgId}/meters/`);
+};
+
+export const createMeter = (
+  orgId: string,
+  data: TCreateMeterSchema
+): Promise<Meter> => {
+  return authApi<Meter>(`/${API_VERSION}/organizations/${orgId}/meters/`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+};
+
+export const getMeter = (orgId: string, meterId: string): Promise<Meter> => {
+  return authApi<Meter>(
+    `/${API_VERSION}/organizations/${orgId}/meters/${meterId}/`
+  );
+};
+
+export const updateMeter = (
+  orgId: string,
+  meterId: string,
+  data: TCreateMeterSchema
+): Promise<Meter> => {
+  return authApi<Meter>(
+    `/${API_VERSION}/organizations/${orgId}/meters/${meterId}/`,
+    {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }
+  );
+};
+
+export const deleteMeter = (orgId: string, meterId: string): Promise<void> => {
+  return authApi<void>(
+    `/${API_VERSION}/organizations/${orgId}/meters/${meterId}/`,
+    {
+      method: "DELETE",
+    }
+  );
 };

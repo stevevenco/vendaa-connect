@@ -212,3 +212,34 @@ export interface Transaction {
   status: string;
   created_at: string;
 }
+
+export interface Meter {
+  uuid: string;
+  customer_name: string;
+  meter_number: string;
+  email: string;
+  phone: string;
+  address: string;
+  sgc: string;
+  tariff_index: string;
+  key_revision_number: string;
+  meter_type: "electricity" | "water" | "gas";
+  added_by: string;
+  organization: string;
+  created: string;
+  last_updated: string;
+}
+
+export const CreateMeterSchema = z.object({
+  customer_name: z.string().min(1, "Customer name is required"),
+  meter_number: z.string().min(1, "Meter number is required"),
+  email: z.string().email("Invalid email address"),
+  phone: z.string().min(1, "Phone number is required"),
+  address: z.string().min(1, "Address is required"),
+  sgc: z.string().min(1, "SGC is required"),
+  tariff_index: z.string().min(1, "Tariff index is required"),
+  key_revision_number: z.string().min(1, "Key revision number is required"),
+  meter_type: z.enum(["electricity", "water", "gas"]),
+});
+
+export type TCreateMeterSchema = z.infer<typeof CreateMeterSchema>;
