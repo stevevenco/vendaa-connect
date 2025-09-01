@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -6,8 +7,10 @@ import { Wallet, Plus, ArrowUpDown, History, RefreshCw } from "lucide-react";
 import { useOrganizations } from "@/hooks/useOrganizations";
 import { useTopUp } from "@/hooks/useTopUp";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function WalletPage() {
+  const [selectedMonth, setSelectedMonth] = useState("all");
   const {
     walletBalance,
     isLoading,
@@ -19,6 +22,12 @@ export default function WalletPage() {
     fetchTransactions,
   } = useOrganizations();
   const { openModal } = useTopUp();
+
+  const filteredTransactions = transactions.filter(tx => {
+    if (selectedMonth === "all") return true;
+    const txDate = new Date(tx.created_at);
+    return txDate.getMonth() + 1 === parseInt(selectedMonth);
+  });
 
   // Function to truncate text longer than 20 characters
   const truncateText = (text: string, maxLength: number = 20) => {
@@ -110,15 +119,30 @@ export default function WalletPage() {
                     View all your wallet transactions and their status.
                   </CardDescription>
                 </div>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => selectedOrganization && fetchTransactions(selectedOrganization.uuid)}
-                  disabled={isTransactionsLoading}
-                >
-                  <RefreshCw className={`h-4 w-4 ${isTransactionsLoading ? 'animate-spin' : ''}`} />
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                    <SelectTrigger className="w-[140px]">
+                      <SelectValue placeholder="Filter by month" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Months</SelectItem>
+                      {Array.from({ length: 12 }, (_, i) => (
+                        <SelectItem key={i + 1} value={(i + 1).toString()}>
+                          {new Date(0, i).toLocaleString('default', { month: 'long' })}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => selectedOrganization && fetchTransactions(selectedOrganization.uuid)}
+                    disabled={isTransactionsLoading}
+                  >
+                    <RefreshCw className={`h-4 w-4 ${isTransactionsLoading ? 'animate-spin' : ''}`} />
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
@@ -142,7 +166,7 @@ export default function WalletPage() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {transactions.map((transaction) => (
+                  {filteredTransactions.map((transaction) => (
                     <div
                       key={transaction.transaction_id}
                       className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
