@@ -13,14 +13,19 @@ import {
   TUpdateOrganizationSchema,
   OrganizationMember,
   TAddMemberSchema,
+  TUpdateMemberRoleSchema,
+  TResetPasswordSchema,
+  Meter,
+  TCreateMeterSchema,
 } from "@/types";
 
-const LOCAL_API_URL: string = "http://localhost:8000";
-const STAGING_API_URL: string = "https://vendaa-be.onrender.com";
-const PRODUCTION_API_URL: string = "https://api.example.com";
-const API_VERSION: string = "api/v1";
+const LOCAL_API_URL: string = import.meta.env.VITE_LOCAL_API_URL || "http://localhost:8000";
+const STAGING_API_URL: string = import.meta.env.VITE_STAGING_API_URL || "https://vendaa-be.onrender.com";
+const PRODUCTION_API_URL: string = import.meta.env.VITE_PRODUCTION_API_URL || "https://api.example.com";
+const API_VERSION: string = import.meta.env.VITE_API_VERSION || "api/v1";
 
-const env: string = import.meta.env.VITE_ENV || "staging";
+const env: string = import.meta.env.VITE_ENV || "development";
+
 let API_URL: string = "";
 if (env === "development") {
   API_URL = LOCAL_API_URL;
@@ -32,6 +37,14 @@ if (env === "development") {
 
 const getAuthToken: () => string | null = () => localStorage.getItem("access");
 
+export class ApiError extends Error {
+  status: number;
+  constructor(message: string, status: number) {
+    super(message);
+    this.status = status;
+  }
+}
+
 const api = async <T>(
   url: string,
   options: RequestInit = {}
@@ -40,11 +53,13 @@ const api = async <T>(
 
   if (!response.ok) {
     const errorData = await response.json();
-    throw new Error(
+    const message =
       errorData.detail ||
-        (errorData.non_field_errors && errorData.non_field_errors[0]) ||
-        "API request failed"
-    );
+      (errorData.non_field_errors && errorData.non_field_errors[0]) ||
+      (errorData.email && errorData.email[0]) ||
+      (errorData.error && errorData.error[0]) ||
+      "Dang! Something went wrong, I wish I could explain, but I don't want to bore you with the details, check back later I promise to have it fixed. 💚";
+    throw new ApiError(message, response.status);
   }
 
   if (response.status === 204) {
@@ -90,6 +105,16 @@ export const register = (
   });
 };
 
+export const resetPassword = (data: TResetPasswordSchema): Promise<{ detail: string }> => {
+  return api<{ detail: string }>(`/${API_VERSION}/auth/reset-password/`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  });
+};
+
 export const updateOrganization = (
   orgId: string,
   data: TUpdateOrganizationSchema
@@ -107,12 +132,59 @@ export const getOrganizationMembers = (
 };
 
 export const addOrganizationMember = (
-  orgId: string,
+  organizationUuid: string,
   data: TAddMemberSchema
-): Promise<void> => {
-  return authApi<void>(`/${API_VERSION}/auth/organizations/${orgId}/members/`, {
+): Promise<{ email: string; role: string }> => {
+  return authApi<{ email: string; role: string }>(`/${API_VERSION}/auth/organizations/${organizationUuid}/members/`, {
     method: "POST",
     body: JSON.stringify(data),
+  });
+};
+
+export const updateMemberRole = (
+  orgUuid: string,
+  memberUuid: string,
+  data: TUpdateMemberRoleSchema
+): Promise<{ role: string }> => {
+  return authApi<{ role: string }>(`/${API_VERSION}/auth/organizations/${orgUuid}/members/${memberUuid}/`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+};
+
+export const removeMember = (
+  orgUuid: string,
+  memberUuid: string
+): Promise<void> => {
+  return authApi<void>(`/${API_VERSION}/auth/organizations/${orgUuid}/members/${memberUuid}/`, {
+    method: "DELETE",
+  });
+};
+
+export const getInvitations = (type: 'sent' | 'received' = 'received'): Promise<OrganizationInvite[]> => {
+  return authApi<OrganizationInvite[]>(`/${API_VERSION}/auth/invitations/?type=${type}`);
+};
+
+export const verifyInvitation = (token: string): Promise<OrganizationInvite> => {
+  return authApi<OrganizationInvite>(`/${API_VERSION}/auth/invites/verify/?token=${token}`);
+};
+
+export const acceptInvitation = (token: string): Promise<{ detail: string }> => {
+  return authApi<{ detail: string }>(`/${API_VERSION}/auth/invites/accept/`, {
+    method: "POST",
+    body: JSON.stringify({ token }),
+  });
+};
+
+export const declineInvitation = (invitationId: string): Promise<{ detail: string }> => {
+  return authApi<{ detail: string }>(`/${API_VERSION}/auth/invites/${invitationId}/decline/`, {
+    method: "POST"
+  });
+};
+
+export const cancelInvitation = (invitationId: string): Promise<{ detail: string }> => {
+  return authApi<{ detail: string }>(`/${API_VERSION}/auth/invites/${invitationId}/cancel/`, {
+    method: "POST"
   });
 };
 
@@ -161,4 +233,74 @@ export const createOrganization = (
     method: "POST",
     body: JSON.stringify(data),
   });
+};
+
+// Wallet Related Endpoints
+export const getWalletBalance = (organizationId: string): Promise<{ balance: string }> => {
+  return authApi<{ balance: string }>(`/${API_VERSION}/wallet/balance/${organizationId}/`);
+};
+
+export const createWallet = (organization_id: string): Promise<any> => {
+  return authApi<any>(`/${API_VERSION}/wallet/create/`, {
+    method: "POST",
+    body: JSON.stringify({ organization_id }),
+  });
+};
+
+export const initiateWalletFunding = (
+  organizationId: string,
+  paymentOption: 'online_checkout' | 'bank_transfer',
+  amount: number
+): Promise<PaymentOption[]> => {
+  return authApi<PaymentOption[]>(
+    `/${API_VERSION}/wallet/initiate-payment/${organizationId}?payment_option=${paymentOption}&amount=${amount}`
+  );
+};
+
+export const getTransactions = (organizationId: string): Promise<Transaction[]> => {
+  return authApi<Transaction[]>(`/${API_VERSION}/wallet/transactions/${organizationId}/`);
+};
+
+// Meter Related Endpoints
+export const getMeters = (orgId: string): Promise<Meter[]> => {
+  return authApi<Meter[]>(`/${API_VERSION}/organizations/${orgId}/meters/`);
+};
+
+export const createMeter = (
+  orgId: string,
+  data: TCreateMeterSchema
+): Promise<Meter> => {
+  return authApi<Meter>(`/${API_VERSION}/organizations/${orgId}/meters/`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+};
+
+export const getMeter = (orgId: string, meterId: string): Promise<Meter> => {
+  return authApi<Meter>(
+    `/${API_VERSION}/organizations/${orgId}/meters/${meterId}/`
+  );
+};
+
+export const updateMeter = (
+  orgId: string,
+  meterId: string,
+  data: TCreateMeterSchema
+): Promise<Meter> => {
+  return authApi<Meter>(
+    `/${API_VERSION}/organizations/${orgId}/meters/${meterId}/`,
+    {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }
+  );
+};
+
+export const deleteMeter = (orgId: string, meterId: string): Promise<void> => {
+  return authApi<void>(
+    `/${API_VERSION}/organizations/${orgId}/meters/${meterId}/`,
+    {
+      method: "DELETE",
+    }
+  );
 };

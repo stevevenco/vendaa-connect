@@ -18,9 +18,9 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { TOtpVerifySchema, OtpVerifySchema } from "@/types";
-import { verifyOtp, requestOtp } from "@/services/api";
-import { useToast } from "@/components/ui/use-toast";
+import { TResetPasswordSchema, ResetPasswordSchema } from "@/types";
+import { resetPassword, requestOtp } from "@/services/api";
+import { useToast } from "@/hooks/use-toast";
 import {
   InputOTP,
   InputOTPGroup,
@@ -31,35 +31,40 @@ export default function ResetPasswordPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-  const email = location.state?.email;
+
+  // In a real app, you might want to get the email from the URL query params
+  // for better user experience, e.g., if the user refreshes the page.
+  const email = location.state?.email || new URLSearchParams(location.search).get('email');
 
   if (!email) {
+    // Redirect to forgot password if email is not present
     navigate("/forgot-password");
+    return null;
   }
 
-  const form = useForm<TOtpVerifySchema>({
-    resolver: zodResolver(OtpVerifySchema),
+  const form = useForm<TResetPasswordSchema>({
+    resolver: zodResolver(ResetPasswordSchema),
     defaultValues: {
       email,
       otp_code: "",
-      purpose: "password_reset",
       new_password: "",
+      confirm_password: "",
     },
   });
 
-  const onSubmit = async (data: TOtpVerifySchema) => {
+  const onSubmit = async (data: TResetPasswordSchema) => {
     try {
-      await verifyOtp(data);
+      await resetPassword(data);
       toast({
         title: "Password Reset Successful",
-        description: "Your password has been reset. Please login.",
+        description: "Your password has been updated. Please log in with your new password.",
       });
       navigate("/login");
     } catch (error) {
       toast({
         title: "Password Reset Failed",
         description:
-          error instanceof Error ? error.message : "An error occurred.",
+          error instanceof Error ? error.message : "An unexpected error occurred.",
         variant: "destructive",
       });
     }
@@ -70,25 +75,25 @@ export default function ResetPasswordPage() {
       await requestOtp({ email, purpose: "password_reset" });
       toast({
         title: "OTP Resent",
-        description: "A new OTP has been sent to your email.",
+        description: "A new OTP has been sent to your email address.",
       });
     } catch (error) {
       toast({
-        title: "Error",
+        title: "Failed to Resend OTP",
         description:
-          error instanceof Error ? error.message : "An error occurred.",
+          error instanceof Error ? error.message : "An unexpected error occurred.",
         variant: "destructive",
       });
     }
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-950">
-      <Card className="mx-auto max-w-sm">
+    <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-950 p-4">
+      <Card className="mx-auto max-w-sm w-full">
         <CardHeader>
           <CardTitle className="text-2xl">Reset Password</CardTitle>
           <CardDescription>
-            Enter the OTP sent to your email and your new password.
+            An OTP has been sent to <strong>{email}</strong>. Please enter it below along with your new password.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -102,7 +107,7 @@ export default function ResetPasswordPage() {
                     <FormLabel>One-Time Password</FormLabel>
                     <FormControl>
                       <InputOTP maxLength={6} {...field}>
-                        <InputOTPGroup>
+                        <InputOTPGroup className="w-full">
                           <InputOTPSlot index={0} />
                           <InputOTPSlot index={1} />
                           <InputOTPSlot index={2} />
@@ -123,7 +128,20 @@ export default function ResetPasswordPage() {
                   <FormItem>
                     <FormLabel>New Password</FormLabel>
                     <FormControl>
-                      <Input type="password" {...field} />
+                      <Input type="password" placeholder="••••••••" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="confirm_password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Confirm New Password</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="••••••••" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -142,7 +160,7 @@ export default function ResetPasswordPage() {
           </Form>
           <div className="mt-4 text-center text-sm">
             Didn't receive an OTP?{" "}
-            <Button variant="link" onClick={handleResendOtp}>
+            <Button variant="link" onClick={handleResendOtp} className="p-0 h-auto">
               Resend OTP
             </Button>
           </div>

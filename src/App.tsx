@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { TopUpProvider } from "./context/TopUpProvider";
 import { AppLayout } from "./components/layout/AppLayout";
 import Dashboard from "./pages/Dashboard";
 import WalletPage from "./pages/Wallet";
@@ -19,6 +20,8 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import VerifyOtpPage from "./pages/VerifyOtp";
 import AuthCallbackPage from "./pages/AuthCallback";
 import CreateOrganizationPage from "./pages/CreateOrganization";
+import AcceptInvitePage from "./pages/AcceptInvite";
+import ResetPasswordPage from "./pages/ResetPassword";
 
 const queryClient = new QueryClient();
 
@@ -27,12 +30,15 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
+      <TopUpProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/verify-otp" element={<VerifyOtpPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/accept-invite/:token" element={<AcceptInvitePage />} />
           <Route element={<ProtectedRoute />}>
             <Route path="/auth-callback" element={<AuthCallbackPage />} />
             <Route
@@ -53,6 +59,7 @@ const App = () => (
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
+    </TopUpProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );

@@ -1,34 +1,97 @@
-import { useState, useEffect } from "react";
-import { Organization, User } from "@/types";
-import { getMe } from "@/services/api";
+import { useState, useEffect, useCallback } from "react";
+import { Organization, User, Transaction } from "@/types";
+import { getMe, getWalletBalance, createWallet, ApiError, getTransactions } from "@/services/api";
+import { useAuth } from "@/hooks/useAuth";
 import { OrganizationContext } from "./organizationContext";
 import { OrganizationProviderProps } from "./organizationContext.types";
 
-export const OrganizationProvider = ({ children }: OrganizationProviderProps) => {
+export const OrganizationProvider = ({
+  children,
+}: OrganizationProviderProps) => {
+  const { logout } = useAuth();
   const [user, setUser] = useState<User | null>(null);
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [selectedOrganization, setSelectedOrganization] =
     useState<Organization | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [walletBalance, setWalletBalance] = useState<string | null>(null);
+  const [isBalanceLoading, setIsBalanceLoading] = useState(false);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [isTransactionsLoading, setIsTransactionsLoading] = useState(false);
+
+  const fetchWalletBalance = useCallback(async (organizationId: string) => {
+    setIsBalanceLoading(true);
+    try {
+      const balanceData = await getWalletBalance(organizationId);
+      setWalletBalance(balanceData.balance);
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 404) {
+        try {
+          await createWallet(organizationId);
+          const balanceData = await getWalletBalance(organizationId);
+          setWalletBalance(balanceData.balance);
+        } catch (creationError) {
+          console.error("Failed to create or fetch wallet balance after creation attempt:", creationError);
+          setWalletBalance(null);
+        }
+      } else {
+        console.error("Failed to fetch wallet balance:", error);
+        setWalletBalance(null);
+      }
+    } finally {
+      setIsBalanceLoading(false);
+    }
+  }, []);
+
+  const fetchTransactions = useCallback(async (organizationId: string) => {
+    setIsTransactionsLoading(true);
+    try {
+      const transactionsData = await getTransactions(organizationId);
+      setTransactions(transactionsData);
+    } catch (error) {
+      console.error("Failed to fetch transactions:", error);
+      setTransactions([]);
+    } finally {
+      setIsTransactionsLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    const fetchOrganizations = async () => {
+    const fetchInitialData = async () => {
       try {
         const userData: User = await getMe();
         setUser(userData);
         if (userData.organizations && userData.organizations.length > 0) {
-          setOrganizations(userData.organizations);
-          setSelectedOrganization(userData.organizations[0]);
+          const orgs = userData.organizations;
+          setOrganizations(orgs);
+          
+          const savedOrgId = localStorage.getItem('selectedOrganizationId');
+          const savedOrg = savedOrgId ? orgs.find(org => org.uuid === savedOrgId) : null;
+
+          if (savedOrg) {
+            setSelectedOrganization(savedOrg);
+            fetchWalletBalance(savedOrg.uuid);
+            fetchTransactions(savedOrg.uuid);
+          } else {
+            setSelectedOrganization(orgs[0]);
+            fetchWalletBalance(orgs[0].uuid);
+            fetchTransactions(orgs[0].uuid);
+            localStorage.setItem('selectedOrganizationId', orgs[0].uuid);
+          }
         }
       } catch (error) {
-        console.error("Failed to fetch organizations", error);
+        if (error instanceof ApiError && error.status === 401) {
+          logout();
+        } else {
+          console.error("Failed to fetch organizations", error);
+        }
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchOrganizations();
-  }, []);
+    fetchInitialData();
+  }, [fetchWalletBalance, fetchTransactions]);
 
   const switchOrganization = (organizationUuid: string) => {
     const organization = organizations.find(
@@ -36,6 +99,9 @@ export const OrganizationProvider = ({ children }: OrganizationProviderProps) =>
     );
     if (organization) {
       setSelectedOrganization(organization);
+      fetchWalletBalance(organization.uuid);
+      fetchTransactions(organization.uuid);
+      localStorage.setItem('selectedOrganizationId', organization.uuid);
     }
   };
 
@@ -47,6 +113,12 @@ export const OrganizationProvider = ({ children }: OrganizationProviderProps) =>
         switchOrganization,
         isLoading,
         user,
+        walletBalance,
+        fetchWalletBalance,
+        isBalanceLoading,
+        transactions,
+        fetchTransactions,
+        isTransactionsLoading,
       }}
     >
       {children}

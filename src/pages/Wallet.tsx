@@ -1,14 +1,33 @@
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Wallet, Plus, ArrowUpDown, CreditCard, History } from "lucide-react";
-import { dummyWallet, dummyTransactions } from "@/data/dummyData";
+import { Wallet, Plus, ArrowUpDown, History, RefreshCw } from "lucide-react";
+import { useOrganizations } from "@/hooks/useOrganizations";
+import { useTopUp } from "@/hooks/useTopUp";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function WalletPage() {
-  const recentTransactions = dummyTransactions.slice(0, 10);
+  const [selectedMonth, setSelectedMonth] = useState("all");
+  const {
+    walletBalance,
+    isLoading,
+    selectedOrganization,
+    fetchWalletBalance,
+    isBalanceLoading,
+    transactions,
+    isTransactionsLoading,
+    fetchTransactions,
+  } = useOrganizations();
+  const { openModal } = useTopUp();
+
+  const filteredTransactions = transactions.filter(tx => {
+    if (selectedMonth === "all") return true;
+    const txDate = new Date(tx.created_at);
+    return txDate.getMonth() + 1 === parseInt(selectedMonth);
+  });
 
   // Function to truncate text longer than 20 characters
   const truncateText = (text: string, maxLength: number = 20) => {
@@ -26,52 +45,34 @@ export default function WalletPage() {
         </div>
       </div>
 
-      {/* Wallet Overview */}
-      <div className="flex md:grid md:gap-4 md:grid-cols-2 lg:grid-cols-4 overflow-x-auto snap-x snap-mandatory space-x-4 md:space-x-0 pb-4">
-        <Card className="min-w-[160px] snap-start md:min-w-0 bg-gradient-to-br from-primary to-primary-glow text-primary-foreground">
+      <div className="w-full">
+        <Card className="w-full min-w-[160px] snap-start md:min-w-0 bg-gradient-to-br from-primary to-primary-glow text-primary-foreground">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-xs sm:text-sm flex items-center gap-2">
               <Wallet className="h-4 w-4" />
               Current Balance
             </CardTitle>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 text-primary-foreground/80 hover:text-primary-foreground"
+              onClick={() => selectedOrganization && fetchWalletBalance(selectedOrganization.uuid)}
+              disabled={isBalanceLoading}
+            >
+              <RefreshCw className={`h-4 w-4 ${isBalanceLoading ? 'animate-spin' : ''}`} />
+            </Button>
           </CardHeader>
           <CardContent>
-            <div className="text-lg sm:text-2xl font-bold">
-              ₦{dummyWallet.balance.toLocaleString()}
-            </div>
+            {isLoading ? (
+              <Skeleton className="h-8 w-3/4" />
+            ) : (
+              <div className="text-lg sm:text-2xl font-bold">
+                {walletBalance ?? "₦0.00"}
+              </div>
+            )}
             <p className="text-xs text-primary-foreground/80 mt-1">
               Available for vending
             </p>
-          </CardContent>
-        </Card>
-
-        <Card className="min-w-[160px] snap-start md:min-w-0">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs sm:text-sm">Total Spent</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-lg sm:text-2xl font-bold">₦{dummyWallet.totalSpent.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">Lifetime spending</p>
-          </CardContent>
-        </Card>
-
-        <Card className="min-w-[160px] snap-start md:min-w-0">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs sm:text-sm">Total Top-ups</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-lg sm:text-2xl font-bold">₦{dummyWallet.totalTopUps.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">All time deposits</p>
-          </CardContent>
-        </Card>
-
-        <Card className="min-w-[160px] snap-start md:min-w-0">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs sm:text-sm">Pending</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-lg sm:text-2xl font-bold">{dummyWallet.pendingTransactions}</div>
-            <p className="text-xs text-muted-foreground">Pending transactions</p>
           </CardContent>
         </Card>
       </div>
@@ -90,54 +91,17 @@ export default function WalletPage() {
                 Add Funds to Wallet
               </CardTitle>
               <CardDescription className="text-xs sm:text-sm">
-                Choose your preferred payment method to add funds.
+                Click the button below to add funds to your wallet.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="amount" className="text-xs sm:text-sm">Amount (NGN)</Label>
-                  <Input
-                    id="amount"
-                    type="number"
-                    placeholder="Enter amount"
-                    min="1000"
-                    step="100"
-                    className="text-sm"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Minimum top-up amount is ₦1,000
-                  </p>
-                </div>
-
-                <div className="grid gap-3">
-                  <Label className="text-xs sm:text-sm">Payment Method</Label>
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    <Button variant="outline" className="justify-start h-auto p-3 text-left">
-                      <CreditCard className="mr-2 h-4 w-4 flex-shrink-0" />
-                      <div>
-                        <div className="text-xs sm:text-sm font-medium">Bank Transfer</div>
-                        <div className="text-xs text-muted-foreground">
-                          Direct bank transfer - Instant
-                        </div>
-                      </div>
-                    </Button>
-                    <Button variant="outline" className="justify-start h-auto p-3 text-left">
-                      <CreditCard className="mr-2 h-4 w-4 flex-shrink-0" />
-                      <div>
-                        <div className="text-xs sm:text-sm font-medium">Debit Card</div>
-                        <div className="text-xs text-muted-foreground">
-                          Pay with debit card - Small fee
-                        </div>
-                      </div>
-                    </Button>
-                  </div>
-                </div>
-
-                <Button className="w-full bg-gradient-to-r from-primary to-primary-glow text-sm">
-                  Proceed to Payment
-                </Button>
-              </div>
+            <CardContent>
+              <Button
+                onClick={openModal}
+                className="w-full bg-gradient-to-r from-primary to-primary-glow text-sm"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Top Up Wallet
+              </Button>
             </CardContent>
           </Card>
         </TabsContent>
@@ -145,47 +109,99 @@ export default function WalletPage() {
         <TabsContent value="history" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-                <History className="h-4 w-4" />
-                Transaction History
-              </CardTitle>
-              <CardDescription className="text-xs sm:text-sm">
-                View all your wallet transactions and their status.
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                    <History className="h-4 w-4" />
+                    Transaction History
+                  </CardTitle>
+                  <CardDescription className="text-xs sm:text-sm">
+                    View all your wallet transactions and their status.
+                  </CardDescription>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                    <SelectTrigger className="w-[140px]">
+                      <SelectValue placeholder="Filter by month" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Months</SelectItem>
+                      {Array.from({ length: 12 }, (_, i) => (
+                        <SelectItem key={i + 1} value={(i + 1).toString()}>
+                          {new Date(0, i).toLocaleString('default', { month: 'long' })}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => selectedOrganization && fetchTransactions(selectedOrganization.uuid)}
+                    disabled={isTransactionsLoading}
+                  >
+                    <RefreshCw className={`h-4 w-4 ${isTransactionsLoading ? 'animate-spin' : ''}`} />
+                  </Button>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {recentTransactions.map((transaction) => (
-                  <div
-                    key={transaction.id}
-                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                        <ArrowUpDown className="h-4 w-4 text-primary" />
+              {isTransactionsLoading ? (
+                <div className="space-y-4">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="flex items-center gap-4">
+                        <Skeleton className="h-10 w-10 rounded-full" />
+                        <div className="space-y-2">
+                          <Skeleton className="h-4 w-[150px]" />
+                          <Skeleton className="h-4 w-[200px]" />
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-xs sm:text-sm font-medium">{truncateText(transaction.description)}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(transaction.date).toLocaleDateString()} at{" "}
-                          {new Date(transaction.date).toLocaleTimeString()}
+                      <div className="text-right space-y-2">
+                        <Skeleton className="h-5 w-[80px] mb-1" />
+                        <Skeleton className="h-4 w-[100px]" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {filteredTransactions.map((transaction) => (
+                    <div
+                      key={transaction.transaction_id}
+                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                          <ArrowUpDown className="h-4 w-4 text-primary" />
+                        </div>
+                        <div>
+                          <p className="text-xs sm:text-sm font-medium">{truncateText(transaction.title)}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(transaction.created_at).toLocaleDateString()} at{" "}
+                            {new Date(transaction.created_at).toLocaleTimeString()}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <Badge
+                          variant={transaction.status === 'success' ? 'default' : 'secondary'}
+                          className="mb-1 text-xs sm:text-sm"
+                        >
+                          {transaction.amount}
+                        </Badge>
+                        <p className="text-xs capitalize"
+                          style={{
+                            color: transaction.status === 'success' ? 'green' : transaction.status === 'failed' ? 'red' : 'orange'
+                          }}
+                        >
+                          {transaction.status}
                         </p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <Badge 
-                        variant={transaction.type === 'wallet_topup' ? 'default' : 'secondary'}
-                        className="mb-1 text-xs sm:text-sm"
-                      >
-                        {transaction.type === 'wallet_topup' ? '+' : '-'}₦{transaction.amount.toLocaleString()}
-                      </Badge>
-                      <p className="text-xs text-muted-foreground">
-                        Balance: ₦{transaction.balance.toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

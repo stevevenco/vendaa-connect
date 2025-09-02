@@ -31,6 +31,7 @@ export const RegisterSchema = z
     last_name: z.string().min(1, {
       message: "Last name is required.",
     }),
+    phone_number: z.string().optional(),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords do not match.",
@@ -104,13 +105,16 @@ export type TCreateOrganizationSchema = z.infer<
 export interface Organization {
   uuid: string;
   name: string;
-  role: string;
+  created_by: string;
+  created: string;
+  role?: string; // Role is part of the user-organization link, but let's keep it optional here
 }
 
 export interface User {
   email: string;
   first_name: string;
   last_name: string;
+  phone_number: string | null;
   organizations: Organization[];
 }
 
@@ -124,11 +128,19 @@ export type TUpdateOrganizationSchema = z.infer<
   typeof UpdateOrganizationSchema
 >;
 
+export interface MemberUser {
+  email: string;
+  first_name: string;
+  last_name: string;
+  phone_number: string | null;
+}
+
 export interface OrganizationMember {
   uuid: string;
-  user: User;
+  user: MemberUser;
   role: string;
   joined_at: string;
+  invited_by: string;
 }
 
 export const AddMemberSchema = z.object({
@@ -137,3 +149,97 @@ export const AddMemberSchema = z.object({
 });
 
 export type TAddMemberSchema = z.infer<typeof AddMemberSchema>;
+
+export const UpdateMemberRoleSchema = z.object({
+  role: z.enum(["admin", "member", "owner"]),
+});
+
+export type TUpdateMemberRoleSchema = z.infer<typeof UpdateMemberRoleSchema>;
+
+export const ResetPasswordSchema = z
+  .object({
+    email: z.string().email(),
+    otp_code: z.string(),
+    new_password: z.string().min(8, "Password must be at least 8 characters."),
+    confirm_password: z.string(),
+  })
+  .refine((data) => data.new_password === data.confirm_password, {
+    message: "Passwords do not match.",
+    path: ["confirm_password"],
+  });
+export type TResetPasswordSchema = z.infer<typeof ResetPasswordSchema>;
+
+export interface OrganizationInvite {
+  token: string;
+  email: string;
+  role: string;
+  organization_name: string;
+  organization_uuid: string;
+  sent_by_email: string;
+  sent_by_name: string;
+  status: 'pending' | 'accepted' | 'declined' | 'cancelled';
+  created: string;
+  expires_at: string;
+}
+
+export interface BasePaymentOption {
+  payment_gateway: string;
+  slug: string;
+  logo: string;
+  amount: string;
+  fee: string;
+  provider: string;
+}
+
+export interface OnlineCheckoutPaymentOption extends BasePaymentOption {
+  payment_url: string;
+}
+
+export interface BankTransferPaymentOption extends BasePaymentOption {
+  bank_name: string;
+  icon: string;
+  account_number: string;
+  account_name: string;
+  account_reference: string;
+}
+
+export type PaymentOption = OnlineCheckoutPaymentOption | BankTransferPaymentOption;
+
+export interface Transaction {
+  transaction_id: string;
+  title: string;
+  amount: string;
+  status: string;
+  created_at: string;
+}
+
+export interface Meter {
+  uuid: string;
+  customer_name: string;
+  meter_number: string;
+  email: string;
+  phone: string;
+  address: string;
+  sgc: string;
+  tariff_index: string;
+  key_revision_number: string;
+  meter_type: "electricity" | "water" | "gas";
+  added_by: string;
+  organization: string;
+  created: string;
+  last_updated: string;
+}
+
+export const CreateMeterSchema = z.object({
+  customer_name: z.string().min(1, "Customer name is required"),
+  meter_number: z.string().min(1, "Meter number is required"),
+  email: z.string().email("Invalid email address"),
+  phone: z.string().min(1, "Phone number is required"),
+  address: z.string().min(1, "Address is required"),
+  sgc: z.string().min(1, "SGC is required"),
+  tariff_index: z.string().min(1, "Tariff index is required"),
+  key_revision_number: z.string().min(1, "Key revision number is required"),
+  meter_type: z.enum(["electricity", "water", "gas"]),
+});
+
+export type TCreateMeterSchema = z.infer<typeof CreateMeterSchema>;

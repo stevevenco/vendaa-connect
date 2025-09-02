@@ -1,14 +1,9 @@
-import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Wallet, Plus, RefreshCw } from "lucide-react";
+import { Wallet, TrendingUp, Gauge, Zap, Plus } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
-import { dummyTransactions, dummyMeters } from "@/data/dummyData";
-import { useOrganizations } from "@/hooks/useOrganizations";
-import { useTopUp } from "@/hooks/useTopUp";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { dummyWallet, dummyReports, dummyTransactions, dummyMeters } from "@/data/dummyData";
 
 const chartData = [
   { month: "Jan", electricity: 45000, water: 18000, gas: 12000 },
@@ -19,61 +14,9 @@ const chartData = [
   { month: "Jun", electricity: 61000, water: 24000, gas: 18000 },
 ];
 
-import { Transaction } from "@/types";
-
-// Helper function to process transactions for the wallet activity chart
-const processTransactionsForChart = (transactions: Transaction[], month: number, year: number) => {
-  const daysInMonth = new Date(year, month, 0).getDate();
-  const dailyTotals: { [key: string]: number } = {};
-
-  transactions.forEach(tx => {
-    const txDate = new Date(tx.created_at);
-    if (txDate.getMonth() + 1 === month && txDate.getFullYear() === year) {
-      const day = txDate.getDate().toString();
-      const amount = parseFloat(tx.amount.replace(/[^0-9.-]+/g, ''));
-      if (!dailyTotals[day]) {
-        dailyTotals[day] = 0;
-      }
-      dailyTotals[day] += amount;
-    }
-  });
-
-  const chartData = [];
-  for (let day = 1; day <= daysInMonth; day++) {
-    chartData.push({
-      day: day.toString(),
-      amount: dailyTotals[day.toString()] || 0,
-    });
-  }
-  return chartData;
-};
-
 export default function Dashboard() {
-  const {
-    walletBalance,
-    isLoading,
-    selectedOrganization,
-    fetchWalletBalance,
-    isBalanceLoading,
-    transactions,
-    isTransactionsLoading,
-  } = useOrganizations();
-  const { openModal } = useTopUp();
   const recentVends = dummyTransactions.filter(t => t.type === 'credit_purchase').slice(0, 5);
-
-  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth() + 1);
-  const [walletActivityData, setWalletActivityData] = useState<any[]>([]);
-
-  useEffect(() => {
-    const year = new Date().getFullYear();
-    if (transactions) {
-      setWalletActivityData(processTransactionsForChart(transactions, currentMonth, year));
-    }
-  }, [currentMonth, transactions]);
-
-  const year = new Date().getFullYear();
-  const daysInMonth = new Date(year, currentMonth, 0).getDate();
-  const ticks = [1, 5, 10, 15, 20, 25, daysInMonth];
+  const activeMeters = dummyMeters.filter(m => m.status === 'active').length;
 
   // Function to truncate text longer than 20 characters
   const truncateText = (text: string, maxLength: number = 20) => {
@@ -90,44 +33,64 @@ export default function Dashboard() {
             Welcome back! Here's what's happening with your utility platform.
           </p>
         </div>
-        <Button
-          size="sm"
-          className="bg-gradient-to-r from-primary to-primary-glow hover:opacity-90"
-          onClick={openModal}
-        >
+        <Button size="sm" className="bg-gradient-to-r from-primary to-primary-glow hover:opacity-90">
           <Plus className="mr-2 h-4 w-4" />
           Quick Top-up
         </Button>
       </div>
 
       {/* Stats Cards */}
-      <div className="w-full">
-        <Card className="w-full bg-gradient-to-br from-primary to-primary-glow text-primary-foreground">
+      <div className="flex md:grid md:gap-4 md:grid-cols-2 lg:grid-cols-4 overflow-x-auto snap-x snap-mandatory space-x-4 md:space-x-0 pb-4">
+        <Card className="min-w-[160px] snap-start md:min-w-0 bg-gradient-to-br from-primary to-primary-glow text-primary-foreground">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-xs sm:text-sm font-medium">Wallet Balance</CardTitle>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 text-primary-foreground/80 hover:text-primary-foreground"
-                onClick={() => selectedOrganization && fetchWalletBalance(selectedOrganization.uuid)}
-                disabled={isBalanceLoading}
-              >
-                <RefreshCw className={`h-4 w-4 ${isBalanceLoading ? 'animate-spin' : ''}`} />
-              </Button>
-              <Wallet className="h-4 w-4" />
-            </div>
+            <Wallet className="h-4 w-4" />
           </CardHeader>
           <CardContent>
-            {isLoading ? (
-              <Skeleton className="h-8 w-3/4" />
-            ) : (
-              <div className="text-lg sm:text-2xl font-bold">
-                {walletBalance ?? "₦0.00"}
-              </div>
-            )}
+            <div className="text-lg sm:text-2xl font-bold">
+              ₦{dummyWallet.balance.toLocaleString()}
+            </div>
             <p className="text-xs text-primary-foreground/80">
-              Available for vending
+              +₦10,000 from last top-up
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="min-w-[160px] snap-start md:min-w-0">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium">Total Revenue</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-lg sm:text-2xl font-bold">₦342,891</div>
+            <p className="text-xs text-muted-foreground">
+              +12% from last month
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="min-w-[160px] snap-start md:min-w-0">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium">Active Meters</CardTitle>
+            <Gauge className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-lg sm:text-2xl font-bold">{activeMeters}</div>
+            <p className="text-xs text-muted-foreground">
+              2 meters added this week
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="min-w-[160px] snap-start md:min-w-0">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium">Vends Today</CardTitle>
+            <Zap className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-lg sm:text-2xl font-bold">23</div>
+            <p className="text-xs text-muted-foreground">
+              +3 from yesterday
             </p>
           </CardContent>
         </Card>
@@ -199,39 +162,25 @@ export default function Dashboard() {
 
       {/* Wallet Activity Chart */}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle className="text-base sm:text-lg">Wallet Activity Trend</CardTitle>
-            <CardDescription className="text-xs sm:text-sm">
-              Track your wallet balance and spending patterns over time
-            </CardDescription>
-          </div>
-          <Select value={currentMonth.toString()} onValueChange={(value) => setCurrentMonth(parseInt(value))}>
-            <SelectTrigger className="w-[120px]">
-              <SelectValue placeholder="Select month" />
-            </SelectTrigger>
-            <SelectContent>
-              {Array.from({ length: 12 }, (_, i) => (
-                <SelectItem key={i + 1} value={(i + 1).toString()}>
-                  {new Date(0, i).toLocaleString('default', { month: 'long' })}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <CardHeader>
+          <CardTitle className="text-base sm:text-lg">Wallet Activity Trend</CardTitle>
+          <CardDescription className="text-xs sm:text-sm">
+            Track your wallet balance and spending patterns over time
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={walletActivityData}>
+            <LineChart data={dummyReports.creditGenerated}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="day" tick={{ fontSize: 12 }} ticks={ticks.map(String)} />
+              <XAxis dataKey="month" tick={{ fontSize: 12 }} />
               <YAxis tick={{ fontSize: 12 }} />
-              <Tooltip
+              <Tooltip 
                 formatter={(value: number) => [`₦${value.toLocaleString()}`, 'Amount']}
               />
-              <Line
-                type="monotone"
-                dataKey="amount"
-                stroke="hsl(var(--primary))"
+              <Line 
+                type="monotone" 
+                dataKey="amount" 
+                stroke="hsl(var(--primary))" 
                 strokeWidth={3}
                 dot={{ fill: "hsl(var(--primary))", strokeWidth: 2, r: 4 }}
               />
