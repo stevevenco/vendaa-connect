@@ -3,7 +3,8 @@ import { Outlet } from "react-router-dom";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 import { Header } from "./Header";
-import { OrganizationProvider, OrganizationContext } from "@/context/OrganizationContext.tsx";
+import { OrganizationContext } from "@/context/OrganizationContext.ts";
+import { OrganizationProvider } from "@/context/OrganizationContext.tsx";
 import { TopUpModal } from "@/components/TopUpModal";
 
 function AppLayoutContent() {

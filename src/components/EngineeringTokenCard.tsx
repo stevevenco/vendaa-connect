@@ -3,8 +3,10 @@ import { useOutletContext } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { 
+import {
   Key,
+  CheckCircle,
+  AlertTriangle,
   RotateCcw,
   Wrench
 } from "lucide-react";
@@ -17,6 +19,8 @@ import TokenDisplayDialog from "./TokenDisplayDialog";
 const operationTypes = [
   { value: "kct", label: "Key Change Token (KCT)", icon: Key },
   { value: "clear_credit", label: "Clear Credit", icon: RotateCcw },
+  { value: "clear_tamper", label: "Clear Tamper", icon: AlertTriangle },
+  { value: "mode_change", label: "Mode Change", icon: CheckCircle },
 ];
 
 interface EngineeringTokenCardProps {
