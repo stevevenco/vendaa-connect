@@ -17,6 +17,8 @@ import {
   TResetPasswordSchema,
   Meter,
   TCreateMeterSchema,
+  GenerateTokenRequest,
+  TokenResponse,
 } from "@/types";
 
 const LOCAL_API_URL: string = import.meta.env.VITE_LOCAL_API_URL || "http://localhost:8000";
@@ -291,6 +293,19 @@ export const updateMeter = (
     `/${API_VERSION}/organizations/${orgId}/meters/${meterId}/`,
     {
       method: "PUT",
+      body: JSON.stringify(data),
+    }
+  );
+};
+
+export const generateToken = (
+  orgId: string,
+  data: GenerateTokenRequest
+): Promise<TokenResponse> => {
+  return authApi<TokenResponse>(
+    `/${API_VERSION}/organizations/${orgId}/generate-token/`,
+    {
+      method: "POST",
       body: JSON.stringify(data),
     }
   );
