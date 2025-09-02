@@ -243,3 +243,22 @@ export const CreateMeterSchema = z.object({
 });
 
 export type TCreateMeterSchema = z.infer<typeof CreateMeterSchema>;
+
+export interface GenerateTokenRequest {
+  token_type: "kct" | "credit" | "clear_credit";
+  meter_number: string;
+  amount: number;
+}
+
+export interface CreditTokenResponse {
+  token: string;
+}
+
+export interface KctToken {
+  description: string;
+  token: string;
+}
+
+export type KctTokenResponse = KctToken[];
+
+export type TokenResponse = CreditTokenResponse | KctTokenResponse;
