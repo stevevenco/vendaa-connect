@@ -19,6 +19,9 @@ import {
   TCreateMeterSchema,
   GenerateTokenRequest,
   TokenResponse,
+  ApiKey,
+  CreateApiKeyResponse,
+  TCreateApiKeySchema,
 } from "@/types";
 
 const LOCAL_API_URL: string = import.meta.env.VITE_LOCAL_API_URL || "http://localhost:8000";
@@ -294,6 +297,38 @@ export const updateMeter = (
     {
       method: "PUT",
       body: JSON.stringify(data),
+    }
+  );
+};
+
+// API Key Endpoints
+export const getApiKeys = (orgId: string): Promise<ApiKey[]> => {
+  return authApi<ApiKey[]>(
+    `/${API_VERSION}/auth/organizations/${orgId}/api-keys/`
+  );
+};
+
+export const createApiKey = (
+  orgId: string,
+  data: TCreateApiKeySchema
+): Promise<CreateApiKeyResponse> => {
+  return authApi<CreateApiKeyResponse>(
+    `/${API_VERSION}/auth/organizations/${orgId}/api-keys/`,
+    {
+      method: "POST",
+      body: JSON.stringify(data),
+    }
+  );
+};
+
+export const deleteApiKey = (
+  orgId: string,
+  apiKeyId: string
+): Promise<void> => {
+  return authApi<void>(
+    `/${API_VERSION}/auth/organizations/${orgId}/api-keys/${apiKeyId}/`,
+    {
+      method: "DELETE",
     }
   );
 };
