@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useOutletContext } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -6,26 +7,189 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { 
   Zap, 
   Droplets, 
   Flame, 
   CreditCard, 
 } from "lucide-react";
-import { dummyMeters } from "@/data/dummyData";
+import { generateToken, getMeters } from "@/services/api";
+import { ApiError } from "@/services/api";
+import { useToast } from "@/components/ui/use-toast";
+import { Meter, Organization, TokenResponse, CreditTokenResponse, KctTokenResponse } from "@/types";
 import EngineeringTokenCard from "@/components/EngineeringTokenCard";
 import RemoteOperationCard from "@/components/RemoteOperationCard";
+import TokenDisplayDialog from "@/components/TokenDisplayDialog";
 
 export default function VendingPage() {
   const [selectedMeter, setSelectedMeter] = useState("");
   const [amount, setAmount] = useState("");
-  const [activeTab, setActiveTab] = useState("credit"); // State for dropdown/tab selection
+  const [purchaseType, setPurchaseType] = useState("amount");
+  const [meters, setMeters] = useState<Meter[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [tokenGenerating, setTokenGenerating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("credit");
+  const { activeOrganization } = useOutletContext<{ activeOrganization: Organization | null }>();
+  const { toast } = useToast();
+  const [isTokenDialogOpen, setIsTokenDialogOpen] = useState(false);
+  const [generatedTokens, setGeneratedTokens] = useState<{ description: string; token: string }[]>([]);
+  const [dialogTitle, setDialogTitle] = useState("");
+
+  useEffect(() => {
+    const fetchMeters = async () => {
+      if (activeOrganization) {
+        try {
+          setLoading(true);
+          const fetchedMeters = await getMeters(activeOrganization.uuid);
+          setMeters(fetchedMeters);
+          setError(null);
+        } catch (err) {
+          setError("Failed to fetch meters. Please try again later.");
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchMeters();
+  }, [activeOrganization]);
 
   const tabOptions = [
     { value: "credit", label: "Credit Purchase" },
     { value: "engineering", label: "Engineering Tokens" },
     { value: "remote", label: "Remote Operations" },
   ];
+
+  const selectedMeterDetails = meters.find(m => m.meter_number === selectedMeter);
+
+  const getUnit = (meterType: string | undefined) => {
+    switch (meterType) {
+      case 'electricity': return 'kWh';
+      case 'water': return 'litres';
+      case 'gas': return 'scm';
+      default: return 'units';
+    }
+  };
+
+  const handleGenerateToken = async () => {
+    if (!activeOrganization || !selectedMeter || !amount) return;
+
+    setTokenGenerating(true);
+    try {
+      const response = await generateToken(activeOrganization.uuid, {
+        meter_number: selectedMeter,
+        token_type: 'credit',
+        amount: Number(amount),
+      });
+
+      const tokenData = response as CreditTokenResponse;
+      setDialogTitle("Credit Token Generated");
+      setGeneratedTokens([{ description: "Credit Token", token: tokenData.token }]);
+      setIsTokenDialogOpen(true);
+    } catch (error) {
+      const apiError = error as ApiError;
+      toast({
+        title: "Error Generating Token",
+        description: apiError.message,
+        variant: "destructive",
+      });
+    } finally {
+      setTokenGenerating(false);
+    }
+  };
+
+  const renderCreditPurchaseForm = () => (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <CreditCard className="h-5 w-5" />
+          Generate Utility Credits
+        </CardTitle>
+        <CardDescription>
+          Purchase utility credits for electricity, water, or gas meters.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-2">
+            <Label>Select Meter</Label>
+            <Select value={selectedMeter} onValueChange={setSelectedMeter} disabled={loading}>
+              <SelectTrigger>
+                <SelectValue placeholder={loading ? "Loading meters..." : "Choose meter number"} />
+              </SelectTrigger>
+              <SelectContent>
+                {meters.map((meter) => (
+                  <SelectItem key={meter.uuid} value={meter.meter_number}>
+                    {meter.meter_number} - {meter.customer_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Purchase Type</Label>
+            <RadioGroup
+              defaultValue="amount"
+              className="flex items-center space-x-4"
+              onValueChange={setPurchaseType}
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="amount" id="amount" />
+                <Label htmlFor="amount">Amount (NGN)</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="units" id="units" />
+                <Label htmlFor="units">Units ({getUnit(selectedMeterDetails?.meter_type)})</Label>
+              </div>
+            </RadioGroup>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label>
+            {purchaseType === 'amount' ? 'Amount (NGN)' : `Number of Units (${getUnit(selectedMeterDetails?.meter_type)})`}
+          </Label>
+          <Input
+            type="number"
+            placeholder={purchaseType === 'amount' ? "Enter amount" : "Enter number of units"}
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            min="1"
+          />
+        </div>
+
+        {selectedMeter && selectedMeterDetails && (
+          <Card className="bg-muted/50">
+            <CardContent className="pt-4">
+              <h4 className="font-medium mb-2">Meter Information</h4>
+              <div className="grid gap-2 text-sm">
+                <div className="flex justify-between">
+                  <span>Customer:</span>
+                  <span>{selectedMeterDetails.customer_name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Meter Type:</span>
+                  <Badge variant="outline" className="capitalize">
+                    {selectedMeterDetails.meter_type}
+                  </Badge>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        <Button
+          className="w-full bg-gradient-to-r from-primary to-primary-glow"
+          disabled={!selectedMeter || !amount || loading || tokenGenerating}
+          onClick={handleGenerateToken}
+        >
+          {tokenGenerating ? "Generating..." : "Generate Credit Token"}
+        </Button>
+      </CardContent>
+    </Card>
+  );
 
   return (
     <div className="space-y-6">
@@ -38,50 +202,14 @@ export default function VendingPage() {
         </div>
       </div>
 
-      {/* <div className="grid gap-4 md:grid-cols-3">
-        <Card className="bg-gradient-to-br from-yellow-500/10 to-yellow-600/10 border-yellow-200">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-yellow-700">
-              <Zap className="h-5 w-5" />
-              Electricity
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {dummyMeters.filter(m => m.meterType === 'electricity').length}
-            </div>
-            <p className="text-sm text-muted-foreground">Active meters</p>
-          </CardContent>
-        </Card>
+      {error && <p className="text-red-500">{error}</p>}
 
-        <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 border-blue-200">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-blue-700">
-              <Droplets className="h-5 w-5" />
-              Water
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {dummyMeters.filter(m => m.meterType === 'water').length}
-            </div>
-            <p className="text-sm text-muted-foreground">Active meters</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-orange-500/10 to-orange-600/10 border-orange-200">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-orange-700">
-              <Flame className="h-5 w-5" />
-              Gas
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">0</div>
-            <p className="text-sm text-muted-foreground">Active meters</p>
-          </CardContent>
-        </Card>
-      </div> */}
+      <TokenDisplayDialog
+        isOpen={isTokenDialogOpen}
+        onClose={() => setIsTokenDialogOpen(false)}
+        title={dialogTitle}
+        tokens={generatedTokens}
+      />
 
       {/* Mobile View: Dropdown */}
       <div className="md:hidden space-y-4">
@@ -98,84 +226,8 @@ export default function VendingPage() {
           </SelectContent>
         </Select>
 
-        {activeTab === "credit" && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CreditCard className="h-5 w-5" />
-                Generate Utility Credits
-              </CardTitle>
-              <CardDescription>
-                Purchase utility credits for electricity, water, or gas meters.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label>Select Meter</Label>
-                  <Select value={selectedMeter} onValueChange={setSelectedMeter}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Choose meter number" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {dummyMeters.map((meter) => (
-                        <SelectItem key={meter.id} value={meter.meterNumber}>
-                          {meter.meterNumber} - {meter.customerName}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Credit Amount (NGN)</Label>
-                  <Input
-                    type="number"
-                    placeholder="Enter amount"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    min="100"
-                    step="50"
-                  />
-                </div>
-              </div>
-
-              {selectedMeter && (
-                <Card className="bg-muted/50">
-                  <CardContent className="pt-4">
-                    <h4 className="font-medium mb-2">Meter Information</h4>
-                    <div className="grid gap-2 text-sm">
-                      <div className="flex justify-between">
-                        <span>Customer:</span>
-                        <span>{dummyMeters.find(m => m.meterNumber === selectedMeter)?.customerName}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Current Balance:</span>
-                        <span>₦{dummyMeters.find(m => m.meterNumber === selectedMeter)?.balance.toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Meter Type:</span>
-                        <Badge variant="outline" className="capitalize">
-                          {dummyMeters.find(m => m.meterNumber === selectedMeter)?.meterType}
-                        </Badge>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              <Button 
-                className="w-full bg-gradient-to-r from-primary to-primary-glow"
-                disabled={!selectedMeter || !amount}
-              >
-                Generate Credit Token
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
-        {activeTab === "engineering" && <EngineeringTokenCard />}
-
+        {activeTab === "credit" && renderCreditPurchaseForm()}
+        {activeTab === "engineering" && <EngineeringTokenCard meters={meters} />}
         {activeTab === "remote" && <RemoteOperationCard />}
       </div>
 
@@ -188,83 +240,11 @@ export default function VendingPage() {
         </TabsList>
 
         <TabsContent value="credit" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CreditCard className="h-5 w-5" />
-                Generate Utility Credits
-              </CardTitle>
-              <CardDescription>
-                Purchase utility credits for electricity, water, or gas meters.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label>Select Meter</Label>
-                  <Select value={selectedMeter} onValueChange={setSelectedMeter}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Choose meter number" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {dummyMeters.map((meter) => (
-                        <SelectItem key={meter.id} value={meter.meterNumber}>
-                          {meter.meterNumber} - {meter.customerName}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Credit Amount (NGN)</Label>
-                  <Input
-                    type="number"
-                    placeholder="Enter amount"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    min="100"
-                    step="50"
-                  />
-                </div>
-              </div>
-
-              {selectedMeter && (
-                <Card className="bg-muted/50">
-                  <CardContent className="pt-4">
-                    <h4 className="font-medium mb-2">Meter Information</h4>
-                    <div className="grid gap-2 text-sm">
-                      <div className="flex justify-between">
-                        <span>Customer:</span>
-                        <span>{dummyMeters.find(m => m.meterNumber === selectedMeter)?.customerName}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Current Balance:</span>
-                        <span>₦{dummyMeters.find(m => m.meterNumber === selectedMeter)?.balance.toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Meter Type:</span>
-                        <Badge variant="outline" className="capitalize">
-                          {dummyMeters.find(m => m.meterNumber === selectedMeter)?.meterType}
-                        </Badge>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              <Button 
-                className="w-full bg-gradient-to-r from-primary to-primary-glow"
-                disabled={!selectedMeter || !amount}
-              >
-                Generate Credit Token
-              </Button>
-            </CardContent>
-          </Card>
+          {renderCreditPurchaseForm()}
         </TabsContent>
 
         <TabsContent value="engineering" className="space-y-4">
-          <EngineeringTokenCard />
+          <EngineeringTokenCard meters={meters} />
         </TabsContent>
 
         <TabsContent value="remote" className="space-y-4">
