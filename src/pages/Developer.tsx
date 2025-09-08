@@ -151,7 +151,7 @@ export default function DeveloperPage() {
                 Create API Key
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="w-[95vw] sm:w-full rounded-lg">
               <DialogHeader>
                 <DialogTitle>Create a new API Key</DialogTitle>
                 <DialogDescription>
