@@ -242,7 +242,7 @@ export const createOrganization = (
 
 // Wallet Related Endpoints
 export const getWalletBalance = (organizationId: string): Promise<{ balance: string }> => {
-  return authApi<{ balance: string }>(`/${API_VERSION}/wallet/balance/${organizationId}/`);
+  return authApi<{ available_balance: string }>(`/${API_VERSION}/wallet/balance/${organizationId}/`);
 };
 
 export const createWallet = (organization_id: string): Promise<any> => {
