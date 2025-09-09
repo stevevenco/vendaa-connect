@@ -242,7 +242,7 @@ export const createOrganization = (
 
 // Wallet Related Endpoints
 export const getWalletBalance = (organizationId: string): Promise<{ balance: string }> => {
-  return authApi<{ balance: string }>(`/${API_VERSION}/wallet/balance/${organizationId}/`);
+  return authApi<{ available_balance: string }>(`/${API_VERSION}/wallet/balance/${organizationId}/`);
 };
 
 export const createWallet = (organization_id: string): Promise<any> => {
@@ -309,14 +309,12 @@ export const getApiKeys = (orgId: string): Promise<ApiKey[]> => {
 };
 
 export const createApiKey = (
-  orgId: string,
-  data: TCreateApiKeySchema
+  orgId: string
 ): Promise<CreateApiKeyResponse> => {
   return authApi<CreateApiKeyResponse>(
     `/${API_VERSION}/auth/organizations/${orgId}/api-keys/`,
     {
       method: "POST",
-      body: JSON.stringify(data),
     }
   );
 };
