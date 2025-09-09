@@ -309,14 +309,12 @@ export const getApiKeys = (orgId: string): Promise<ApiKey[]> => {
 };
 
 export const createApiKey = (
-  orgId: string,
-  data: TCreateApiKeySchema
+  orgId: string
 ): Promise<CreateApiKeyResponse> => {
   return authApi<CreateApiKeyResponse>(
     `/${API_VERSION}/auth/organizations/${orgId}/api-keys/`,
     {
       method: "POST",
-      body: JSON.stringify(data),
     }
   );
 };

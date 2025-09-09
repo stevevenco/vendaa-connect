@@ -274,13 +274,4 @@ export interface ApiKey {
 
 export interface CreateApiKeyResponse {
   key: string;
-  name: string;
 }
-
-export const CreateApiKeySchema = z.object({
-  name: z.string().min(1, {
-    message: "API key name is required.",
-  }),
-});
-
-export type TCreateApiKeySchema = z.infer<typeof CreateApiKeySchema>;

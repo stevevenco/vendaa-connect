@@ -42,7 +42,6 @@ export function ApiTokenDisplayDialog({
         </DialogHeader>
         <div className="space-y-4">
           <div>
-            <p className="font-semibold">{apiKey.name}</p>
             <div className="flex items-center space-x-2 mt-2">
               <Input readOnly value={apiKey.key} />
               <Button variant="outline" size="icon" onClick={handleCopy}>
