@@ -37,7 +37,7 @@ export default function VerifyOtpPage() {
   }
 
   const form = useForm<TOtpVerifySchema>({
-    resolver: zodResolver(OtpVerifySchema),
+    resolver: zodResolver(OtpVerifySchema.omit({ new_password: true })),
     defaultValues: {
       email,
       otp_code: "",
@@ -125,7 +125,7 @@ export default function VerifyOtpPage() {
           </Form>
           <div className="mt-4 text-center text-sm">
             Didn't receive an OTP?{" "}
-            <Button variant="link" onClick={handleResendOtp}>
+            <Button variant="link" onClick={handleResendOtp} className="p-0 h-auto">
               Resend OTP
             </Button>
           </div>
