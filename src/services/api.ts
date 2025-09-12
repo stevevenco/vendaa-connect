@@ -339,6 +339,10 @@ export const generateToken = (
     `/${API_VERSION}/organizations/${orgId}/generate-token/`,
     {
       method: "POST",
+      headers: {
+      "Content-Type": "application/json",
+      "Idempotency-Key": crypto.randomUUID(), // Ensure idempotency
+    },
       body: JSON.stringify(data),
     }
   );
