@@ -8,6 +8,7 @@ import { AppLayout } from "./components/layout/AppLayout";
 import Dashboard from "./pages/Dashboard";
 import WalletPage from "./pages/Wallet";
 import MetersPage from "./pages/Meters";
+import MeterDetailsPage from "./pages/MeterDetailsPage";
 import VendingPage from "./pages/Vending";
 import ReportsPage from "./pages/Reports";
 import SettingsPage from "./pages/Settings";
@@ -50,6 +51,7 @@ const App = () => (
               <Route index element={<Dashboard />} />
               <Route path="wallet" element={<WalletPage />} />
               <Route path="meters" element={<MetersPage />} />
+              <Route path="meters/:meterId" element={<MeterDetailsPage />} />
               <Route path="vending" element={<VendingPage />} />
               <Route path="reports" element={<ReportsPage />} />
               <Route path="settings" element={<SettingsPage />} />

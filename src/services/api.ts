@@ -58,7 +58,9 @@ const api = async <T>(
   options: RequestInit = {},
   useApiVersion: boolean = true
 ): Promise<T> => {
-  const requestUrl = useApiVersion ? `${API_URL}/${API_VERSION}${url}` : `${API_URL}/${API_VERSION}${url}`;
+  const requestUrl = useApiVersion
+    ? `${API_URL}/${API_VERSION}${url}`
+    : `${API_URL}${url}`;
   const response = await fetch(requestUrl, options);
 
   if (!response.ok) {
@@ -309,51 +311,41 @@ export const getTransactions = (organizationId: string): Promise<Transaction[]> 
   return authApi<Transaction[]>(`/wallet/transactions/${organizationId}/`);
 };
 
-// Meter Related Endpoints (Assuming these are now under /auth/organizations/)
+// Meter Related Endpoints
 export const getMeters = (orgId: string): Promise<Meter[]> => {
-  return authApi<Meter[]>(`/auth/organizations/${orgId}/meters/`, {}, false);
+  return authApi<Meter[]>(`/organizations/${orgId}/meters/`);
 };
 
 export const createMeter = (
   orgId: string,
   data: TCreateMeterSchema
 ): Promise<Meter> => {
-  return authApi<Meter>(`/auth/organizations/${orgId}/meters/`, {
+  return authApi<Meter>(`/organizations/${orgId}/meters/`, {
     method: "POST",
     body: JSON.stringify(data),
-  }, false);
+  });
 };
 
 export const getMeter = (orgId: string, meterId: string): Promise<Meter> => {
-  return authApi<Meter>(
-    `/auth/organizations/${orgId}/meters/${meterId}/`, {}, false
-  );
+  return authApi<Meter>(`/organizations/${orgId}/meters/${meterId}/`);
 };
 
 export const updateMeter = (
   orgId: string,
   meterId: string,
-  data: TCreateMeterSchema
+  data: Partial<TCreateMeterSchema>
 ): Promise<Meter> => {
-  return authApi<Meter>(
-    `/auth/organizations/${orgId}/meters/${meterId}/`,
-    {
-      method: "PUT",
-      body: JSON.stringify(data),
-    },
-    false
-  );
+  return authApi<Meter>(`/organizations/${orgId}/meters/${meterId}/`, {
+    method: "PATCH", // Using PATCH for partial updates
+    body: JSON.stringify(data),
+  });
 };
 
 export const deleteMeter = (orgId: string, meterId: string): Promise<void> => {
-    return authApi<void>(
-      `/auth/organizations/${orgId}/meters/${meterId}/`,
-      {
-        method: "DELETE",
-      },
-      false
-    );
-  };
+  return authApi<void>(`/organizations/${orgId}/meters/${meterId}/`, {
+    method: "DELETE",
+  });
+};
 
 // API Key Endpoints
 export const getApiKeys = (orgId: string): Promise<ApiKey[]> => {
@@ -393,16 +385,12 @@ export const generateToken = (
   orgId: string,
   data: GenerateTokenRequest
 ): Promise<TokenResponse> => {
-  return authApi<TokenResponse>(
-    `/auth/organizations/${orgId}/generate-token/`,
-    {
-      method: "POST",
-      headers: {
+  return authApi<TokenResponse>(`/organizations/${orgId}/generate-token/`, {
+    method: "POST",
+    headers: {
       "Content-Type": "application/json",
       "Idempotency-Key": crypto.randomUUID(), // Ensure idempotency
     },
-      body: JSON.stringify(data),
-    },
-    false
-  );
+    body: JSON.stringify(data),
+  });
 };
