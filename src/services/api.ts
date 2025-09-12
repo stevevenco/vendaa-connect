@@ -58,7 +58,7 @@ const api = async <T>(
   options: RequestInit = {},
   useApiVersion: boolean = true
 ): Promise<T> => {
-  const requestUrl = useApiVersion ? `${API_URL}/${API_VERSION}${url}` : `${API_URL}${url}`;
+  const requestUrl = useApiVersion ? `${API_URL}/${API_VERSION}${url}` : `${API_URL}/${API_VERSION}${url}`;
   const response = await fetch(requestUrl, options);
 
   if (!response.ok) {
