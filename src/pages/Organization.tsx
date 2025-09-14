@@ -813,22 +813,22 @@ export default function OrganizationPage() {
                       </FormItem>
                     )}
                   />
-                   <div className="space-y-2">
+                  {/* <div className="space-y-2">
                     <Label className="text-xs sm:text-sm">Country</Label>
                     <Input
                       readOnly
                       value={countryName ? countryName.charAt(0).toUpperCase() + countryName.slice(1) : ""}
                       className="text-sm bg-gray-100 dark:bg-gray-800"
                     />
-                  </div>
-                  <div className="space-y-2">
+                  </div> */}
+                  {/* <div className="space-y-2">
                     <Label className="text-xs sm:text-sm">Currency</Label>
                     <Input
                       readOnly
                       value={selectedOrganization?.currency || ""}
                       className="text-sm bg-gray-100 dark:bg-gray-800"
                     />
-                  </div>
+                  </div> */}
                   <Button
                     type="submit"
                     disabled={updateOrganizationMutation.isPending}
