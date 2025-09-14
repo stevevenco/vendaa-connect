@@ -23,13 +23,13 @@ export const OrganizationProvider = ({
     setIsBalanceLoading(true);
     try {
       const balanceData = await getWalletBalance(organizationId);
-      setWalletBalance(balanceData.balance);
+      setWalletBalance(balanceData.available_balance);
     } catch (error) {
       if (error instanceof ApiError && error.status === 404) {
         try {
           await createWallet(organizationId);
           const balanceData = await getWalletBalance(organizationId);
-          setWalletBalance(balanceData.balance);
+          setWalletBalance(balanceData.available_balance);
         } catch (creationError) {
           console.error("Failed to create or fetch wallet balance after creation attempt:", creationError);
           setWalletBalance(null);

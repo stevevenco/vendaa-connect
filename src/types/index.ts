@@ -262,3 +262,16 @@ export interface KctToken {
 export type KctTokenResponse = KctToken[];
 
 export type TokenResponse = CreditTokenResponse | KctTokenResponse;
+
+// API Key related types
+export interface ApiKey {
+  uuid: string;
+  name: string;
+  prefix: string;
+  created: string;
+  last_used: string | null;
+}
+
+export interface CreateApiKeyResponse {
+  key: string;
+}
