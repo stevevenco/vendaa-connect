@@ -1,24 +1,14 @@
-import { useAuth } from "@/context/AuthContext";
-import { Navigate, Outlet, useLocation } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { Navigate, Outlet } from "react-router-dom";
 
 const ProtectedRoute = () => {
-  const { isAuthenticated, isVerified, isLoading } = useAuth();
-  const location = useLocation();
+  const { isAuthenticated } = useAuth();
 
-  if (isLoading) {
+  if (isAuthenticated === null) {
     return <div>Loading...</div>;
   }
 
-  if (!isAuthenticated) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
-  }
-
-  if (!isVerified) {
-    // Redirect to a dedicated verification page
-    return <Navigate to="/verify-account" replace />;
-  }
-
-  return <Outlet />;
+  return isAuthenticated ? <Outlet /> : <Navigate to="/login" replace />;
 };
 
 export default ProtectedRoute;

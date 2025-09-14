@@ -116,14 +116,10 @@ export default function VendingPage() {
 
   const getUnit = (meterType: string | undefined) => {
     switch (meterType) {
-      case "electricity":
-        return "kWh";
-      case "water":
-        return "litres";
-      case "gas":
-        return "scm";
-      default:
-        return "units";
+      case 'electricity': return 'kWh';
+      case 'water': return 'litres';
+      case 'gas': return 'scm';
+      default: return 'units';
     }
   };
 
@@ -144,18 +140,14 @@ export default function VendingPage() {
     if (!activeOrganization) return;
 
     const payload: any = {
-      token_type: values.token_type,
+      token_type: "credit",
       meter_number: values.meter_number,
     };
 
-    if (values.token_type === "credit") {
-      if (purchaseMethod === "amount") {
-        payload.amount = Number(values.amount);
-      } else {
-        payload.utility_units = Number(values.utility_units);
-      }
+    if (purchaseMethod === "amount") {
+      payload.amount = values.amount;
     } else {
-      payload.amount = Number(values.amount);
+      payload.utility_units = values.utility_units;
     }
 
     setTokenGenerating(true);
@@ -163,10 +155,10 @@ export default function VendingPage() {
       const response = await generateToken(activeOrganization.uuid, payload);
 
       if (Array.isArray(response)) {
-        setDialogTitle(getDialogTitle(values.token_type));
+        setDialogTitle(getDialogTitle(payload.token_type));
         setGeneratedTokens(response as KctTokenResponse);
       } else {
-        setDialogTitle(getDialogTitle(values.token_type));
+        setDialogTitle(getDialogTitle(payload.token_type));
         setGeneratedTokens([
           {
             description: "Credit Token",
@@ -218,7 +210,9 @@ export default function VendingPage() {
                         <SelectTrigger>
                           <SelectValue
                             placeholder={
-                              loading ? "Loading meters..." : "Choose meter number"
+                              loading
+                                ? "Loading meters..."
+                                : "Choose meter number"
                             }
                           />
                         </SelectTrigger>
@@ -276,7 +270,6 @@ export default function VendingPage() {
                         type="number"
                         placeholder="Enter amount"
                         {...field}
-                        onChange={(e) => field.onChange(Number(e.target.value))}
                       />
                     </FormControl>
                     <FormMessage />
@@ -290,15 +283,14 @@ export default function VendingPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
-                      Number of Units ({getUnit(selectedMeterDetails?.meter_type)}
-                      )
+                      Number of Units (
+                      {getUnit(selectedMeterDetails?.meter_type)})
                     </FormLabel>
                     <FormControl>
                       <Input
                         type="number"
                         placeholder="Enter number of units"
                         {...field}
-                        onChange={(e) => field.onChange(Number(e.target.value))}
                       />
                     </FormControl>
                     <FormMessage />

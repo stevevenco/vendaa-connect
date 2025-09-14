@@ -236,12 +236,6 @@ export const CreateMeterSchema = z.object({
 
 export type TCreateMeterSchema = z.infer<typeof CreateMeterSchema>;
 
-export const UpdateMeterSchema = CreateMeterSchema.omit({
-  meter_number: true,
-}).partial();
-
-export type TUpdateMeterSchema = z.infer<typeof UpdateMeterSchema>;
-
 export const GenerateTokenSchema = z.object({
   token_type: z.enum([
     "credit",
@@ -253,9 +247,9 @@ export const GenerateTokenSchema = z.object({
     "ditk",
   ]),
   meter_number: z.string().min(1, "Meter number is required"),
-  amount: z.number().optional(),
-  utility_units: z.number().optional(),
-  subclass: z.number().optional(),
+  amount: z.coerce.number().positive({ message: "Amount must be a positive number" }).optional(),
+  utility_units: z.coerce.number().positive({ message: "Units must be a positive number" }).optional(),
+  subclass: z.coerce.number().optional(),
 });
 
 export type TGenerateTokenSchema = z.infer<typeof GenerateTokenSchema>;
@@ -291,24 +285,10 @@ export type TokenResponse = CreditTokenResponse | KctTokenResponse;
 // API Key related types
 export interface ApiKey {
   uuid: string;
-  key_id: string;
-  key_type: "public" | "secret";
-  key_type_display: string;
   name: string;
-  is_active: boolean;
-  created_at: string;
-  last_used_at: string | null;
-  scopes: string[];
-}
-
-export const CreateApiKeySchema = z.object({
-  name: z.string().min(3, "API key name must be at least 3 characters long"),
-  key_type: z.enum(["public", "secret"]),
-});
-export type TCreateApiKeySchema = z.infer<typeof CreateApiKeySchema>;
-
-export interface CreateApiKeyResponse extends Omit<ApiKey, 'last_used_at'> {
-  full_key: string;
+  prefix: string;
+  created: string;
+  last_used: string | null;
 }
 
 export interface UtilityCost {
@@ -317,4 +297,13 @@ export interface UtilityCost {
   cost: string;
   created: string;
   last_updated: string;
+}
+
+export const CreateApiKeySchema = z.object({
+  name: z.string().min(3, "API key name must be at least 3 characters long"),
+});
+export type TCreateApiKeySchema = z.infer<typeof CreateApiKeySchema>;
+
+export interface CreateApiKeyResponse {
+  key: string;
 }

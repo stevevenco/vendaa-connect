@@ -6,7 +6,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -19,17 +19,12 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { TLoginSchema, LoginSchema } from "@/types";
-import { login as apiLogin } from "@/services/api";
+import { login } from "@/services/api";
 import { useToast } from "@/components/ui/use-toast";
-import { useAuth } from "@/context/AuthContext";
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const location = useLocation();
   const { toast } = useToast();
-  const { login } = useAuth();
-  const from = location.state?.from?.pathname || "/";
-
   const form = useForm<TLoginSchema>({
     resolver: zodResolver(LoginSchema),
     defaultValues: {
@@ -40,13 +35,14 @@ export default function LoginPage() {
 
   const onSubmit = async (data: TLoginSchema) => {
     try {
-      const res = await apiLogin(data);
-      login(res.access, res.refresh);
+      const res = await login(data);
+      localStorage.setItem("access", res.access);
+      localStorage.setItem("refresh", res.refresh);
       toast({
         title: "Login Successful",
         description: "You have successfully logged in.",
       });
-      navigate(from, { replace: true });
+      navigate("/auth-callback");
     } catch (error) {
       toast({
         title: "Login Failed",
