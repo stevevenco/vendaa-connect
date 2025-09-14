@@ -60,7 +60,7 @@ const api = async <T>(
 ): Promise<T> => {
   const requestUrl = useApiVersion
     ? `${API_URL}/${API_VERSION}${url}`
-    : `${API_URL}${url}`;
+    : `${API_URL}/${API_VERSION}${url}`;
   const response = await fetch(requestUrl, options);
 
   if (!response.ok) {
@@ -70,7 +70,7 @@ const api = async <T>(
       (errorData.non_field_errors && errorData.non_field_errors[0]) ||
       (errorData.email && errorData.email[0]) ||
       (errorData.error && errorData.error[0]) ||
-      "Dang! Something went wrong, I wish I could explain, but I don't want to bore you with the details, check back later I promise to have it fixed. 💚";
+      "Dang! Something went wrong.";
     throw new ApiError(message, response.status);
   }
 
@@ -208,8 +208,8 @@ export const removeMember = (
   }, false);
 };
 
-export const getInvitations = (type: 'sent' | 'received' = 'received'): Promise<OrganizationInvite[]> => {
-  return authApi<OrganizationInvite[]>(`/auth/invitations/?type=${type}`, {}, false);
+export const getInvitations = (type: 'sent' | 'received' = 'received', orgUuid: string): Promise<OrganizationInvite[]> => {
+  return authApi<OrganizationInvite[]>(`/auth/organizations/${orgUuid}/invitations/?type=${type}`, {}, false);
 };
 
 export const verifyInvitation = (token: string): Promise<OrganizationInvite> => {

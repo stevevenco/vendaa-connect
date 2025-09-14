@@ -96,14 +96,15 @@ export default function OrganizationPage() {
   });
 
   const { data: sentInvites, isLoading: isLoadingSentInvites } = useQuery({
-    queryKey: ["invitations", "sent"],
-    queryFn: () => getInvitations("sent"),
+    queryKey: ["invitations", "sent", selectedOrganization?.uuid],
+    queryFn: () => getInvitations("sent", selectedOrganization!.uuid),
     enabled: !!selectedOrganization,
   });
 
   const { data: receivedInvites, isLoading: isLoadingReceivedInvites } = useQuery({
-    queryKey: ["invitations", "received"],
-    queryFn: () => getInvitations("received"),
+    queryKey: ["invitations", "received", selectedOrganization?.uuid],
+    queryFn: () => getInvitations("received", selectedOrganization!.uuid),
+    enabled: !!selectedOrganization,
   });
 
   const updateOrganizationMutation = useMutation({
