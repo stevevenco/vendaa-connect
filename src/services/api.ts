@@ -359,9 +359,37 @@ export const createApiKey = (
   data: TCreateApiKeySchema
 ): Promise<CreateApiKeyResponse> => {
   return authApi<CreateApiKeyResponse>(
-    `/auth/organizations/${orgId}/api-keys/`,
+    `/auth/organizations/${orgId}/api-keys/create/`,
     {
       method: "POST",
+      body: JSON.stringify(data),
+    },
+    false
+  );
+};
+
+export const regenerateApiKey = (
+  orgId: string,
+  apiKeyId: string
+): Promise<CreateApiKeyResponse> => {
+  return authApi<CreateApiKeyResponse>(
+    `/auth/organizations/${orgId}/api-keys/${apiKeyId}/regenerate/`,
+    {
+      method: "POST",
+    },
+    false
+  );
+};
+
+export const updateApiKey = (
+  orgId: string,
+  apiKeyId: string,
+  data: { is_active: boolean }
+): Promise<ApiKey> => {
+  return authApi<ApiKey>(
+    `/auth/organizations/${orgId}/api-keys/${apiKeyId}/`,
+    {
+      method: "PATCH",
       body: JSON.stringify(data),
     },
     false

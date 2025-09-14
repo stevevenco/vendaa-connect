@@ -23,7 +23,7 @@ export function ApiTokenDisplayDialog({
   const { toast } = useToast();
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(apiKey.key);
+    navigator.clipboard.writeText(apiKey.full_key);
     toast({
       title: "Copied!",
       description: "The API key has been copied to your clipboard.",
@@ -43,7 +43,7 @@ export function ApiTokenDisplayDialog({
         <div className="space-y-4">
           <div>
             <div className="flex items-center space-x-2 mt-2">
-              <Input readOnly value={apiKey.key} />
+              <Input readOnly value={apiKey.full_key} />
               <Button variant="outline" size="icon" onClick={handleCopy}>
                 <Copy className="h-4 w-4" />
               </Button>

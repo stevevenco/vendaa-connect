@@ -258,17 +258,22 @@ export type TokenResponse = CreditTokenResponse | KctTokenResponse;
 // API Key related types
 export interface ApiKey {
   uuid: string;
+  key_id: string;
+  key_type: "public" | "secret";
+  key_type_display: string;
   name: string;
-  prefix: string;
-  created: string;
-  last_used: string | null;
+  is_active: boolean;
+  created_at: string;
+  last_used_at: string | null;
+  scopes: string[];
 }
 
 export const CreateApiKeySchema = z.object({
   name: z.string().min(3, "API key name must be at least 3 characters long"),
+  key_type: z.enum(["public", "secret"]),
 });
 export type TCreateApiKeySchema = z.infer<typeof CreateApiKeySchema>;
 
-export interface CreateApiKeyResponse {
-  key: string;
+export interface CreateApiKeyResponse extends Omit<ApiKey, 'last_used_at'> {
+  full_key: string;
 }
