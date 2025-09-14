@@ -310,3 +310,11 @@ export type TCreateApiKeySchema = z.infer<typeof CreateApiKeySchema>;
 export interface CreateApiKeyResponse extends Omit<ApiKey, 'last_used_at'> {
   full_key: string;
 }
+
+export interface UtilityCost {
+  uuid: string;
+  name: string;
+  cost: string;
+  created: string;
+  last_updated: string;
+}

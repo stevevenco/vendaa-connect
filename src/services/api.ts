@@ -24,6 +24,7 @@ import {
   PaymentOption,
   Transaction,
   TCreateApiKeySchema,
+  UtilityCost,
 } from "@/types";
 
 const LOCAL_API_URL: string = import.meta.env.VITE_LOCAL_API_URL || "http://localhost:8000";
@@ -324,6 +325,10 @@ export const createMeter = (
     method: "POST",
     body: JSON.stringify(data),
   });
+};
+
+export const getUtilityCosts = (): Promise<UtilityCost[]> => {
+  return authApi<UtilityCost[]>(`/meters/utility-costs/`);
 };
 
 export const getMeter = (orgId: string, meterId: string): Promise<Meter> => {
