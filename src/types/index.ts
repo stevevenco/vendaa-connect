@@ -236,10 +236,43 @@ export const CreateMeterSchema = z.object({
 
 export type TCreateMeterSchema = z.infer<typeof CreateMeterSchema>;
 
+export const UpdateMeterSchema = CreateMeterSchema.omit({
+  meter_number: true,
+}).partial();
+
+export type TUpdateMeterSchema = z.infer<typeof UpdateMeterSchema>;
+
+export const GenerateTokenSchema = z.object({
+  token_type: z.enum([
+    "credit",
+    "kct",
+    "mse",
+    "clear_credit",
+    "clear_tamper",
+    "test",
+    "ditk",
+  ]),
+  meter_number: z.string().min(1, "Meter number is required"),
+  amount: z.number().optional(),
+  utility_units: z.number().optional(),
+  subclass: z.number().optional(),
+});
+
+export type TGenerateTokenSchema = z.infer<typeof GenerateTokenSchema>;
+
 export interface GenerateTokenRequest {
-  token_type: "kct" | "credit" | "clear_credit";
+  token_type:
+    | "credit"
+    | "kct"
+    | "mse"
+    | "clear_credit"
+    | "clear_tamper"
+    | "test"
+    | "ditk";
   meter_number: string;
-  amount: number;
+  amount?: number;
+  utility_units?: number;
+  subclass?: number;
 }
 
 export interface CreditTokenResponse {

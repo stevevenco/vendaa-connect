@@ -37,18 +37,16 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
-import { useOrganizations } from "@/hooks/useOrganizations";
+import { useOrganization } from "@/context/useOrganization";
 import { getMeter, updateMeter, ApiError } from "@/services/api";
-import { Meter, CreateMeterSchema, TCreateMeterSchema } from "@/types";
+import { Meter, UpdateMeterSchema, TUpdateMeterSchema } from "@/types";
 import { useToast } from "@/components/ui/use-toast";
 import { ArrowLeft, Loader2, Edit, Save } from "lucide-react";
-
-type TUpdateMeterSchema = Partial<TCreateMeterSchema>;
 
 export default function MeterDetailsPage() {
   const { meterId } = useParams<{ meterId: string }>();
   const navigate = useNavigate();
-  const { selectedOrganization } = useOrganizations();
+  const { selectedOrganization } = useOrganization();
   const { toast } = useToast();
 
   const [meter, setMeter] = useState<Meter | null>(null);
@@ -77,12 +75,16 @@ export default function MeterDetailsPage() {
   }, [fetchMeter]);
 
   const form = useForm<TUpdateMeterSchema>({
-    resolver: zodResolver(CreateMeterSchema.partial()),
+    resolver: zodResolver(UpdateMeterSchema),
     defaultValues: {
-      customer_name: meter?.customer_name,
-      email: meter?.email,
-      phone: meter?.phone,
-      address: meter?.address,
+      customer_name: "",
+      email: "",
+      phone: "",
+      address: "",
+      sgc: "",
+      tariff_index: "",
+      key_revision_number: "",
+      meter_type: "electricity",
     },
   });
 
@@ -93,6 +95,10 @@ export default function MeterDetailsPage() {
         email: meter.email,
         phone: meter.phone,
         address: meter.address,
+        sgc: meter.sgc,
+        tariff_index: meter.tariff_index,
+        key_revision_number: meter.key_revision_number,
+        meter_type: meter.meter_type,
       });
     }
   }, [meter, form]);
@@ -242,6 +248,72 @@ export default function MeterDetailsPage() {
                           <FormControl>
                             <Input {...field} />
                           </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="sgc"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>SGC</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="tariff_index"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Tariff Index</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="key_revision_number"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Key Revision Number</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="meter_type"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Meter Type</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select meter type" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="electricity">
+                                Electricity
+                              </SelectItem>
+                              <SelectItem value="water">Water</SelectItem>
+                              <SelectItem value="gas">Gas</SelectItem>
+                            </SelectContent>
+                          </Select>
                           <FormMessage />
                         </FormItem>
                       )}
