@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -347,13 +348,18 @@ export default function MetersPage() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <Eye className="h-4 w-4" />
+                            <Button asChild variant="outline" size="sm">
+                              <Link to={`/meters/${meter.uuid}`}>
+                                <Eye className="mr-2 h-4 w-4" />
+                                View
+                              </Link>
                             </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500" onClick={() => openDeleteAlert(meter)}>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-red-500"
+                              onClick={() => openDeleteAlert(meter)}
+                            >
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>

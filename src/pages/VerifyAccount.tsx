@@ -6,7 +6,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -25,34 +25,32 @@ import {
   InputOTPGroup,
   InputOTPSlot,
 } from "@/components/ui/input-otp";
+import { useAuth } from "@/context/AuthContext";
 
-export default function VerifyOtpPage() {
+export default function VerifyAccountPage() {
   const navigate = useNavigate();
-  const location = useLocation();
   const { toast } = useToast();
-  const email = location.state?.email;
-
-  if (!email) {
-    navigate("/signup");
-  }
+  const { user, checkAuth } = useAuth();
 
   const form = useForm<TOtpVerifySchema>({
-    resolver: zodResolver(OtpVerifySchema.omit({ new_password: true })),
+    resolver: zodResolver(
+      OtpVerifySchema.omit({ new_password: true, purpose: true })
+    ),
     defaultValues: {
-      email,
+      email: user?.email || "",
       otp_code: "",
-      purpose: "signup",
     },
   });
 
   const onSubmit = async (data: TOtpVerifySchema) => {
     try {
-      await verifyOtp(data);
+      await verifyOtp({ ...data, purpose: "account_verification" });
+      await checkAuth(); // Re-check auth status to update isVerified
       toast({
-        title: "OTP Verification Successful",
-        description: "Your email has been verified. Please login to continue.",
+        title: "Account Verification Successful",
+        description: "Your account has been verified.",
       });
-      navigate("/login");
+      navigate("/");
     } catch (error) {
       toast({
         title: "Verification Failed",
@@ -64,8 +62,12 @@ export default function VerifyOtpPage() {
   };
 
   const handleResendOtp = async () => {
+    if (!user?.email) return;
     try {
-      await requestOtp({ email, purpose: "signup" });
+      await requestOtp({
+        email: user.email,
+        purpose: "account_verification",
+      });
       toast({
         title: "OTP Resent",
         description: "A new OTP has been sent to your email.",
@@ -84,9 +86,10 @@ export default function VerifyOtpPage() {
     <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-950">
       <Card className="mx-auto max-w-sm">
         <CardHeader>
-          <CardTitle className="text-2xl">Verify OTP</CardTitle>
+          <CardTitle className="text-2xl">Verify Your Account</CardTitle>
           <CardDescription>
-            Enter the OTP sent to your email address.
+            An OTP has been sent to your email address. Please enter it below to
+            verify your account.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -119,13 +122,19 @@ export default function VerifyOtpPage() {
                 className="w-full"
                 disabled={form.formState.isSubmitting}
               >
-                {form.formState.isSubmitting ? "Verifying..." : "Verify OTP"}
+                {form.formState.isSubmitting
+                  ? "Verifying..."
+                  : "Verify Account"}
               </Button>
             </form>
           </Form>
           <div className="mt-4 text-center text-sm">
             Didn't receive an OTP?{" "}
-            <Button variant="link" onClick={handleResendOtp} className="p-0 h-auto">
+            <Button
+              variant="link"
+              onClick={handleResendOtp}
+              className="p-0 h-auto"
+            >
               Resend OTP
             </Button>
           </div>

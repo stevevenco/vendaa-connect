@@ -11,6 +11,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { Label } from "@/components/ui/label";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -36,6 +37,7 @@ import {
 } from "@/services/api";
 import { useToast } from "@/components/ui/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import countriesData from "../../countries.json";
 import { useOrganizations } from "@/hooks/useOrganizations";
 import {
   Table,
@@ -61,6 +63,12 @@ export default function OrganizationPage() {
   const [activeTab, setActiveTab] = useState("details");
 
   const [editingMember, setEditingMember] = useState<OrganizationMember | null>(null);
+
+  const countryName =
+    selectedOrganization?.country &&
+    Object.keys(countriesData).find(
+      (key) => (countriesData as any)[key] === selectedOrganization.country
+    );
 
   const organizationForm = useForm<TUpdateOrganizationSchema>({
     resolver: zodResolver(UpdateOrganizationSchema),
@@ -88,14 +96,15 @@ export default function OrganizationPage() {
   });
 
   const { data: sentInvites, isLoading: isLoadingSentInvites } = useQuery({
-    queryKey: ["invitations", "sent"],
-    queryFn: () => getInvitations("sent"),
+    queryKey: ["invitations", "sent", selectedOrganization?.uuid],
+    queryFn: () => getInvitations("sent", selectedOrganization!.uuid),
     enabled: !!selectedOrganization,
   });
 
   const { data: receivedInvites, isLoading: isLoadingReceivedInvites } = useQuery({
-    queryKey: ["invitations", "received"],
-    queryFn: () => getInvitations("received"),
+    queryKey: ["invitations", "received", selectedOrganization?.uuid],
+    queryFn: () => getInvitations("received", selectedOrganization!.uuid),
+    enabled: !!selectedOrganization,
   });
 
   const updateOrganizationMutation = useMutation({
@@ -128,6 +137,7 @@ export default function OrganizationPage() {
       queryClient.invalidateQueries({
         queryKey: ["invitations", "received"],
       });
+      queryClient.invalidateQueries({ queryKey: ["user"] });
     },
     onError: (error) => {
       toast({
@@ -149,6 +159,7 @@ export default function OrganizationPage() {
       queryClient.invalidateQueries({
         queryKey: ["invitations", "received"],
       });
+      queryClient.invalidateQueries({ queryKey: ["user"] });
     },
     onError: (error) => {
       toast({
@@ -657,6 +668,22 @@ export default function OrganizationPage() {
                       </FormItem>
                     )}
                   />
+                  <div className="space-y-2">
+                    <Label className="text-xs sm:text-sm">Country</Label>
+                    <Input
+                      readOnly
+                      value={countryName ? countryName.charAt(0).toUpperCase() + countryName.slice(1) : ""}
+                      className="text-sm bg-gray-100 dark:bg-gray-800"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs sm:text-sm">Currency</Label>
+                    <Input
+                      readOnly
+                      value={selectedOrganization?.currency || ""}
+                      className="text-sm bg-gray-100 dark:bg-gray-800"
+                    />
+                  </div>
                   <Button
                     type="submit"
                     disabled={updateOrganizationMutation.isPending}
@@ -733,6 +760,7 @@ export default function OrganizationPage() {
                           <SelectContent>
                             <SelectItem value="admin" className="text-sm">Admin</SelectItem>
                             <SelectItem value="member" className="text-sm">Member</SelectItem>
+                            <SelectItem value="owner" className="text-sm">Owner</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -785,6 +813,22 @@ export default function OrganizationPage() {
                       </FormItem>
                     )}
                   />
+                  {/* <div className="space-y-2">
+                    <Label className="text-xs sm:text-sm">Country</Label>
+                    <Input
+                      readOnly
+                      value={countryName ? countryName.charAt(0).toUpperCase() + countryName.slice(1) : ""}
+                      className="text-sm bg-gray-100 dark:bg-gray-800"
+                    />
+                  </div> */}
+                  {/* <div className="space-y-2">
+                    <Label className="text-xs sm:text-sm">Currency</Label>
+                    <Input
+                      readOnly
+                      value={selectedOrganization?.currency || ""}
+                      className="text-sm bg-gray-100 dark:bg-gray-800"
+                    />
+                  </div> */}
                   <Button
                     type="submit"
                     disabled={updateOrganizationMutation.isPending}
@@ -863,6 +907,7 @@ export default function OrganizationPage() {
                           <SelectContent>
                             <SelectItem value="admin" className="text-sm">Admin</SelectItem>
                             <SelectItem value="member" className="text-sm">Member</SelectItem>
+                            <SelectItem value="owner" className="text-sm">Owner</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />

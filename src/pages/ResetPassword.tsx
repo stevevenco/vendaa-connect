@@ -18,9 +18,9 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { TResetPasswordSchema, ResetPasswordSchema } from "@/types";
-import { resetPassword, requestOtp } from "@/services/api";
-import { useToast } from "@/hooks/use-toast";
+import { TOtpVerifySchema, OtpVerifySchema } from "@/types";
+import { verifyOtp, requestOtp } from "@/services/api";
+import { useToast } from "@/components/ui/use-toast";
 import {
   InputOTP,
   InputOTPGroup,
@@ -42,19 +42,29 @@ export default function ResetPasswordPage() {
     return null;
   }
 
-  const form = useForm<TResetPasswordSchema>({
-    resolver: zodResolver(ResetPasswordSchema),
+  const ResetPasswordFormSchema = OtpVerifySchema.extend({
+    confirm_password: z.string(),
+  }).refine((data) => data.new_password === data.confirm_password, {
+    message: "Passwords do not match.",
+    path: ["confirm_password"],
+  });
+
+  type TResetPasswordFormSchema = z.infer<typeof ResetPasswordFormSchema>;
+
+  const form = useForm<TResetPasswordFormSchema>({
+    resolver: zodResolver(ResetPasswordFormSchema),
     defaultValues: {
       email,
       otp_code: "",
+      purpose: "password_reset",
       new_password: "",
       confirm_password: "",
     },
   });
 
-  const onSubmit = async (data: TResetPasswordSchema) => {
+  const onSubmit = async (data: TResetPasswordFormSchema) => {
     try {
-      await resetPassword(data);
+      await verifyOtp(data);
       toast({
         title: "Password Reset Successful",
         description: "Your password has been updated. Please log in with your new password.",

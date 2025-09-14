@@ -11,8 +11,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useAuth } from "@/hooks/useAuth";
-import { useOrganizations } from "@/hooks/useOrganizations";
+import { useAuth } from "@/context/AuthContext";
+import { useOrganization } from "@/context/useOrganization";
 
 // Function to truncate text longer than 20 characters
 const truncateText = (text: string, maxLength: number = 20) => {
@@ -20,14 +20,13 @@ const truncateText = (text: string, maxLength: number = 20) => {
 };
 
 export function Header() {
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const {
     organizations,
     selectedOrganization,
     switchOrganization,
-    user,
     isLoading,
-  } = useOrganizations();
+  } = useOrganization();
 
   return (
     <header className="flex h-16 items-center justify-between border-b bg-card px-4 sm:px-6">

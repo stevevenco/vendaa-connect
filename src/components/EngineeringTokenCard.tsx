@@ -51,17 +51,22 @@ export default function EngineeringTokenCard({ meters }: EngineeringTokenCardPro
         amount: 0, // Amount is not needed for engineering tokens
       });
 
-      if (selectedOperation === 'kct') {
-        const tokenData = response as KctTokenResponse;
-        setDialogTitle("KCT Tokens Generated");
-        setGeneratedTokens(tokenData.map(t => ({ description: t.description, token: t.token })));
-        setIsTokenDialogOpen(true);
+      const dialogTitle =
+        operationTypes.find((op) => op.value === selectedOperation)?.label ||
+        "Token Generated";
+      setDialogTitle(dialogTitle);
+
+      if (Array.isArray(response)) {
+        setGeneratedTokens(response);
       } else {
-        const tokenData = response as CreditTokenResponse;
-        setDialogTitle("Clear Credit Token Generated");
-        setGeneratedTokens([{ description: "Clear Credit Token", token: tokenData.token }]);
-        setIsTokenDialogOpen(true);
+        setGeneratedTokens([
+          {
+            description: dialogTitle,
+            token: (response as CreditTokenResponse).token,
+          },
+        ]);
       }
+      setIsTokenDialogOpen(true);
     } catch (error) {
       const apiError = error as ApiError;
       toast({

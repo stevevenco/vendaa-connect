@@ -27,6 +27,7 @@ import {
 import { getMe, updateProfile, changePassword } from "@/services/api";
 import { useToast } from "@/components/ui/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 
 export default function SettingsPage() {
   const { toast } = useToast();
@@ -39,13 +40,22 @@ export default function SettingsPage() {
 
   const profileForm = useForm<TUpdateProfileSchema>({
     resolver: zodResolver(UpdateProfileSchema),
-    values: {
-      email: user?.email || "",
-      first_name: user?.first_name || "",
-      last_name: user?.last_name || "",
+    defaultValues: {
+      first_name: "",
+      last_name: "",
       phone_number: "",
     },
   });
+
+  useEffect(() => {
+    if (user) {
+      profileForm.reset({
+        first_name: user.first_name || "",
+        last_name: user.last_name || "",
+        phone_number: user.phone_number || "",
+      });
+    }
+  }, [user, profileForm]);
 
   const passwordForm = useForm<TChangePasswordSchema>({
     resolver: zodResolver(ChangePasswordSchema),
@@ -152,19 +162,6 @@ export default function SettingsPage() {
                         <FormLabel>Last Name</FormLabel>
                         <FormControl>
                           <Input {...field} disabled={isLoading} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={profileForm.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input type="email" {...field} disabled={isLoading} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

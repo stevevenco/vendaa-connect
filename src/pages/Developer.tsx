@@ -1,7 +1,15 @@
 import { useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { PlusCircle, Trash2, Key, Book, AlertTriangle } from "lucide-react";
+import {
+  PlusCircle,
+  Trash2,
+  Key,
+  Book,
+  AlertTriangle,
+  RotateCw,
+  MoreVertical,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -11,13 +19,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,12 +33,22 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/components/ui/use-toast";
-import { getApiKeys, createApiKey, deleteApiKey } from "@/services/api";
-import { ApiKey, CreateApiKeyResponse, Organization } from "@/types";
+import {
+  getApiKeys,
+  createApiKey,
+  regenerateApiKey,
+  updateApiKey,
+} from "@/services/api";
+import {
+  ApiKey,
+  CreateApiKeyResponse,
+  Organization,
+  TCreateApiKeySchema,
+} from "@/types";
 import { ApiTokenDisplayDialog } from "@/components/ApiTokenDisplayDialog";
+import { CreateApiKeyDialog } from "@/components/CreateApiKeyDialog";
 
 export default function DeveloperPage() {
   const { activeOrganization } = useOutletContext<{
@@ -41,8 +57,9 @@ export default function DeveloperPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [newApiKey, setNewApiKey] = useState<CreateApiKeyResponse | null>(null);
-  const [keyToRevoke, setKeyToRevoke] = useState<ApiKey | null>(null);
-  const [showGenerateKeyDialog, setShowGenerateKeyDialog] = useState(false);
+  const [keyToRegenerate, setKeyToRegenerate] = useState<ApiKey | null>(null);
+  const [keyToToggle, setKeyToToggle] = useState<ApiKey | null>(null);
+  const [showCreateKeyDialog, setShowCreateKeyDialog] = useState(false);
 
   const {
     data: apiKeys,
@@ -55,17 +72,18 @@ export default function DeveloperPage() {
   });
 
   const createApiKeyMutation = useMutation({
-    mutationFn: () => createApiKey(activeOrganization.uuid),
+    mutationFn: (data: TCreateApiKeySchema) =>
+      createApiKey(activeOrganization.uuid, data),
     onSuccess: (data) => {
       toast({
-        title: "API Key Generated",
-        description: "Your new API key has been generated successfully.",
+        title: "API Key Created",
+        description: "Your new API key has been created successfully.",
       });
       setNewApiKey(data);
       queryClient.invalidateQueries({
         queryKey: ["apiKeys", activeOrganization.uuid],
       });
-      setShowGenerateKeyDialog(false);
+      setShowCreateKeyDialog(false);
     },
     onError: (error) => {
       toast({
@@ -77,18 +95,46 @@ export default function DeveloperPage() {
     },
   });
 
-  const deleteApiKeyMutation = useMutation({
+  const regenerateApiKeyMutation = useMutation({
     mutationFn: (apiKeyId: string) =>
-      deleteApiKey(activeOrganization.uuid, apiKeyId),
-    onSuccess: () => {
+      regenerateApiKey(activeOrganization.uuid, apiKeyId),
+    onSuccess: (data) => {
       toast({
-        title: "API Key Revoked",
-        description: "The API key has been revoked successfully.",
+        title: "API Key Regenerated",
+        description: "The API key has been regenerated successfully.",
+      });
+      setNewApiKey(data);
+      queryClient.invalidateQueries({
+        queryKey: ["apiKeys", activeOrganization.uuid],
+      });
+      setKeyToRegenerate(null);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description:
+          error instanceof Error ? error.message : "An error occurred.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const toggleApiKeyMutation = useMutation({
+    mutationFn: (apiKey: ApiKey) =>
+      updateApiKey(activeOrganization.uuid, apiKey.uuid, {
+        is_active: !apiKey.is_active,
+      }),
+    onSuccess: (data) => {
+      toast({
+        title: `API Key ${data.is_active ? "Enabled" : "Disabled"}`,
+        description: `The API key has been successfully ${
+          data.is_active ? "enabled" : "disabled"
+        }.`,
       });
       queryClient.invalidateQueries({
         queryKey: ["apiKeys", activeOrganization.uuid],
       });
-      setKeyToRevoke(null);
+      setKeyToToggle(null);
     },
     onError: (error) => {
       toast({
@@ -100,22 +146,19 @@ export default function DeveloperPage() {
     },
   });
 
-  const handleGenerateClick = () => {
-    if (apiKeys && apiKeys.length > 0) {
-      setShowGenerateKeyDialog(true);
-    } else {
-      handleGenerateConfirm();
-    }
-  };
-
-  const handleGenerateConfirm = () => {
+  const handleCreateConfirm = (data: TCreateApiKeySchema) => {
     if (!activeOrganization) return;
-    createApiKeyMutation.mutate();
+    createApiKeyMutation.mutate(data);
   };
 
-  const handleDelete = () => {
-    if (!activeOrganization || !keyToRevoke) return;
-    deleteApiKeyMutation.mutate(keyToRevoke.uuid);
+  const handleRegenerate = () => {
+    if (!activeOrganization || !keyToRegenerate) return;
+    regenerateApiKeyMutation.mutate(keyToRegenerate.uuid);
+  };
+
+  const handleToggle = () => {
+    if (!activeOrganization || !keyToToggle) return;
+    toggleApiKeyMutation.mutate(keyToToggle);
   };
 
   if (!activeOrganization) {
@@ -134,15 +177,13 @@ export default function DeveloperPage() {
     );
   }
 
-  const apiKey = apiKeys?.[0];
-
   return (
     <>
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Developer</h1>
           <p className="text-muted-foreground">
-            Manage the API key for your organization.
+            Manage your organization's API keys.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -161,54 +202,89 @@ export default function DeveloperPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
-              <CardTitle>API Key</CardTitle>
+              <CardTitle>API Keys</CardTitle>
               <CardDescription>
-                This key allows you to interact with the Vendaa API.
+                These keys allow you to interact with the Vendaa API.
               </CardDescription>
             </div>
             <Button
               disabled={!activeOrganization || createApiKeyMutation.isPending}
-              onClick={handleGenerateClick}
+              onClick={() => setShowCreateKeyDialog(true)}
             >
               <PlusCircle className="mr-2 h-4 w-4" />
-              {apiKey ? "Generate New Key" : "Generate API Key"}
+              Create API Key
             </Button>
           </CardHeader>
           <CardContent>
             {isLoading ? (
               <p>Loading...</p>
             ) : isError ? (
-              <p className="text-destructive">Failed to load API key.</p>
-            ) : apiKey ? (
-              <div className="flex items-center justify-between p-4 bg-muted rounded-md">
-                <div>
-                  <p className="font-mono text-sm">
-                    <span className="font-semibold">Prefix:</span> {apiKey.prefix}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Created on {new Date(apiKey.created).toLocaleDateString()}
-                  </p>
-                  {/* <p className="text-xs text-muted-foreground">
-                    Last used: {apiKey.last_used ? new Date(apiKey.last_used).toLocaleDateString() : 'Never'}
-                  </p> */}
-                </div>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => setKeyToRevoke(apiKey)}
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Revoke
-                </Button>
+              <p className="text-destructive">Failed to load API keys.</p>
+            ) : apiKeys && apiKeys.length > 0 ? (
+              <div className="space-y-4">
+                {apiKeys.map((apiKey) => (
+                  <div
+                    key={apiKey.uuid}
+                    className="flex items-center justify-between p-4 bg-muted rounded-md"
+                  >
+                    <div>
+                      <p className="font-semibold">{apiKey.name}</p>
+                      <p className="font-mono text-sm text-muted-foreground">
+                        {apiKey.key_id}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Created on{" "}
+                        {new Date(apiKey.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                          apiKey.is_active
+                            ? "bg-green-100 text-green-800"
+                            : "bg-red-100 text-red-800"
+                        }`}
+                      >
+                        {apiKey.is_active ? "Active" : "Inactive"}
+                      </span>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                          <DropdownMenuItem
+                            onClick={() => setKeyToRegenerate(apiKey)}
+                          >
+                            <RotateCw className="mr-2 h-4 w-4" />
+                            Regenerate
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => setKeyToToggle(apiKey)}
+                            className={
+                              apiKey.is_active
+                                ? "text-red-600"
+                                : "text-green-600"
+                            }
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            {apiKey.is_active ? "Disable" : "Enable"}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : (
               <div className="text-center py-12">
                 <Key className="mx-auto h-12 w-12 text-muted-foreground" />
                 <h3 className="mt-2 text-sm font-medium text-foreground">
-                  No API key
+                  No API keys
                 </h3>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Get started by generating your first API key.
+                  Get started by creating your first API key.
                 </p>
               </div>
             )}
@@ -221,52 +297,75 @@ export default function DeveloperPage() {
             onClose={() => setNewApiKey(null)}
           />
         )}
+
+        <CreateApiKeyDialog
+          open={showCreateKeyDialog}
+          onOpenChange={setShowCreateKeyDialog}
+          onSubmit={handleCreateConfirm}
+          isPending={createApiKeyMutation.isPending}
+        />
       </div>
 
-      {/* Revoke Key Dialog */}
-      <AlertDialog open={!!keyToRevoke} onOpenChange={(open) => !open && setKeyToRevoke(null)}>
+      {/* Regenerate Key Dialog */}
+      <AlertDialog
+        open={!!keyToRegenerate}
+        onOpenChange={(open) => !open && setKeyToRegenerate(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Revoke API Key</AlertDialogTitle>
+            <AlertDialogTitle>Regenerate API Key</AlertDialogTitle>
             <AlertDialogDescription>
-              This API key will be immediately disabled. API requests made using
-              this key will be rejected, which could cause any systems still
-              depending on it to break.
+              This will invalidate the old key and generate a new one. This
+              action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleDelete}
-              disabled={deleteApiKeyMutation.isPending}
-              className="bg-red-600 hover:bg-red-700"
+              onClick={handleRegenerate}
+              disabled={regenerateApiKeyMutation.isPending}
             >
-              {deleteApiKeyMutation.isPending ? "Revoking..." : "Revoke Key"}
+              {regenerateApiKeyMutation.isPending
+                ? "Regenerating..."
+                : "Regenerate"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Generate New Key Dialog */}
-      <AlertDialog open={showGenerateKeyDialog} onOpenChange={setShowGenerateKeyDialog}>
+      {/* Toggle Key Dialog */}
+      <AlertDialog
+        open={!!keyToToggle}
+        onOpenChange={(open) => !open && setKeyToToggle(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <div className="flex items-center gap-2">
-            <AlertTriangle className="h-6 w-6 text-yellow-500" />
-            <AlertDialogTitle>Generate New API Key?</AlertDialogTitle>
-            </div>
+            <AlertDialogTitle>
+              {keyToToggle?.is_active ? "Disable" : "Enable"} API Key
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Generating a new key will invalidate your existing API key.
-              This action cannot be undone. Are you sure you want to continue?
+              Are you sure you want to{" "}
+              {keyToToggle?.is_active ? "disable" : "enable"} this API key?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleGenerateConfirm}
-              disabled={createApiKeyMutation.isPending}
+              onClick={handleToggle}
+              disabled={toggleApiKeyMutation.isPending}
+              className={
+                keyToToggle?.is_active
+                  ? "bg-red-600 hover:bg-red-700"
+                  : "bg-green-600 hover:bg-green-700"
+              }
             >
-              {createApiKeyMutation.isPending ? "Generating..." : "Generate Key"}
+              {toggleApiKeyMutation.isPending
+                ? keyToToggle?.is_active
+                  ? "Disabling..."
+                  : "Enabling..."
+                : keyToToggle?.is_active
+                ? "Disable"
+                : "Enable"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
