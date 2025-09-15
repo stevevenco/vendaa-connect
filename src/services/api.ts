@@ -71,6 +71,7 @@ const api = async <T>(
       (errorData.non_field_errors && errorData.non_field_errors[0]) ||
       (errorData.email && errorData.email[0]) ||
       (errorData.error && errorData.error[0]) ||
+      [Object.values(errorData)] ||
       "Dang! Something went wrong.";
     throw new ApiError(message, response.status);
   }
