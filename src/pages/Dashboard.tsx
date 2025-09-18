@@ -92,8 +92,8 @@ export default function Dashboard() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="bg-gradient-to-br from-primary to-primary-glow text-primary-foreground">
+      <div className="flex md:grid md:gap-4 md:grid-cols-2 lg:grid-cols-4 overflow-x-auto snap-x snap-mandatory space-x-4 md:space-x-0 pb-4">
+        <Card className="w-72 flex-shrink-0 md:w-auto bg-gradient-to-br from-primary to-primary-glow text-primary-foreground">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-xs sm:text-sm font-medium">Wallet Balance</CardTitle>
             <div className="flex items-center gap-2">
@@ -123,7 +123,7 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="w-72 flex-shrink-0 md:w-auto">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Active Meters</CardTitle>
             <Gauge className="h-4 w-4 text-muted-foreground" />
@@ -140,7 +140,7 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="w-72 flex-shrink-0 md:w-auto">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Vends Today</CardTitle>
             <Zap className="h-4 w-4 text-muted-foreground" />
