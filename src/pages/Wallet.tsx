@@ -22,27 +22,6 @@ export default function WalletPage() {
   } = useOrganizations();
   const { openModal } = useTopUp();
 
-  const [totalSpent, setTotalSpent] = useState(0);
-  const [totalTopUps, setTotalTopUps] = useState(0);
-  const [pendingTransactions, setPendingTransactions] = useState(0);
-
-  useEffect(() => {
-    if (transactions) {
-      const spent = transactions
-        .filter(t => t.status === 'success' && !t.title.toLowerCase().includes('top-up'))
-        .reduce((acc, t) => acc + parseFloat(t.amount.replace(/[^0-9.-]+/g, '')), 0);
-      setTotalSpent(spent);
-
-      const topUps = transactions
-        .filter(t => t.status === 'success' && t.title.toLowerCase().includes('top-up'))
-        .reduce((acc, t) => acc + parseFloat(t.amount.replace(/[^0-9.-]+/g, '')), 0);
-      setTotalTopUps(topUps);
-
-      const pending = transactions.filter(t => t.status === 'pending').length;
-      setPendingTransactions(pending);
-    }
-  }, [transactions]);
-
   const filteredTransactions = transactions.filter(tx => {
     if (selectedMonth === "all") return true;
     const txDate = new Date(tx.created_at);
@@ -72,7 +51,7 @@ export default function WalletPage() {
         </Button>
       </div>
 
-      <div className="w-full">
+      <div className="w-full md:w-80">
         <Card className="w-full bg-gradient-to-br from-primary to-primary-glow text-primary-foreground">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-xs sm:text-sm flex items-center gap-2">
@@ -104,32 +83,6 @@ export default function WalletPage() {
         </Card>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-4">
-        <Card>
-            <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Total Spent</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <div className="text-2xl font-bold">₦{totalSpent.toLocaleString()}</div>
-            </CardContent>
-        </Card>
-        <Card>
-            <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Total Top-ups</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <div className="text-2xl font-bold">₦{totalTopUps.toLocaleString()}</div>
-            </CardContent>
-        </Card>
-        <Card>
-            <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Pending Transactions</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <div className="text-2xl font-bold">{pendingTransactions}</div>
-            </CardContent>
-        </Card>
-      </div>
 
       <div className="space-y-4">
         <Card>
