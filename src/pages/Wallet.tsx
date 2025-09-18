@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Wallet, Plus, ArrowUpDown, History, RefreshCw } from "lucide-react";
 import { useOrganizations } from "@/hooks/useOrganizations";
 import { useTopUp } from "@/hooks/useTopUp";
@@ -22,6 +21,27 @@ export default function WalletPage() {
     fetchTransactions,
   } = useOrganizations();
   const { openModal } = useTopUp();
+
+  const [totalSpent, setTotalSpent] = useState(0);
+  const [totalTopUps, setTotalTopUps] = useState(0);
+  const [pendingTransactions, setPendingTransactions] = useState(0);
+
+  useEffect(() => {
+    if (transactions) {
+      const spent = transactions
+        .filter(t => t.status === 'success' && !t.title.toLowerCase().includes('top-up'))
+        .reduce((acc, t) => acc + parseFloat(t.amount.replace(/[^0-9.-]+/g, '')), 0);
+      setTotalSpent(spent);
+
+      const topUps = transactions
+        .filter(t => t.status === 'success' && t.title.toLowerCase().includes('top-up'))
+        .reduce((acc, t) => acc + parseFloat(t.amount.replace(/[^0-9.-]+/g, '')), 0);
+      setTotalTopUps(topUps);
+
+      const pending = transactions.filter(t => t.status === 'pending').length;
+      setPendingTransactions(pending);
+    }
+  }, [transactions]);
 
   const filteredTransactions = transactions.filter(tx => {
     if (selectedMonth === "all") return true;
@@ -43,10 +63,17 @@ export default function WalletPage() {
             Manage your organization's wallet and transaction history.
           </p>
         </div>
+        <Button
+          onClick={openModal}
+          className="bg-gradient-to-r from-primary to-primary-glow text-sm"
+        >
+          <Plus className="mr-2 h-4 w-4" />
+          Top Up Wallet
+        </Button>
       </div>
 
-      <div className="w-[160px]">
-        <Card className="w-[160px] min-w-[160px] snap-start md:min-w-0 bg-gradient-to-br from-primary to-primary-glow text-primary-foreground">
+      <div className="w-full">
+        <Card className="w-full bg-gradient-to-br from-primary to-primary-glow text-primary-foreground">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-xs sm:text-sm flex items-center gap-2">
               <Wallet className="h-4 w-4" />
@@ -77,37 +104,35 @@ export default function WalletPage() {
         </Card>
       </div>
 
-      <Tabs defaultValue="topup" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="topup" className="text-sm sm:text-base">Top Up Wallet</TabsTrigger>
-          <TabsTrigger value="history" className="text-sm sm:text-base">Transaction History</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="topup" className="w-[320px] space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-                <Plus className="h-4 w-4" />
-                Add Funds to Wallet
-              </CardTitle>
-              <CardDescription className="text-xs sm:text-sm">
-                Click the button below to add funds to your wallet.
-              </CardDescription>
+      <div className="grid md:grid-cols-3 gap-4">
+        <Card>
+            <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Total Spent</CardTitle>
             </CardHeader>
             <CardContent>
-              <Button
-                onClick={openModal}
-                className="w-full bg-gradient-to-r from-primary to-primary-glow text-sm"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Top Up Wallet
-              </Button>
+                <div className="text-2xl font-bold">₦{totalSpent.toLocaleString()}</div>
             </CardContent>
-          </Card>
-        </TabsContent>
+        </Card>
+        <Card>
+            <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Total Top-ups</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <div className="text-2xl font-bold">₦{totalTopUps.toLocaleString()}</div>
+            </CardContent>
+        </Card>
+        <Card>
+            <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Pending Transactions</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <div className="text-2xl font-bold">{pendingTransactions}</div>
+            </CardContent>
+        </Card>
+      </div>
 
-        <TabsContent value="history" className="space-y-4">
-          <Card>
+      <div className="space-y-4">
+        <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
@@ -204,8 +229,7 @@ export default function WalletPage() {
               )}
             </CardContent>
           </Card>
-        </TabsContent>
-      </Tabs>
+      </div>
     </div>
   );
 }
