@@ -26,6 +26,7 @@ import {
   TCreateApiKeySchema,
   UtilityCost,
 } from "@/types";
+import { UtilityVend } from "@/types/dashboard";
 
 const LOCAL_API_URL: string = import.meta.env.VITE_LOCAL_API_URL || "http://localhost:8000";
 const STAGING_API_URL: string = import.meta.env.VITE_STAGING_API_URL || "https://vendaa-be.onrender.com";
@@ -311,6 +312,10 @@ export const initiateWalletFunding = (
 
 export const getTransactions = (organizationId: string): Promise<Transaction[]> => {
   return authApi<Transaction[]>(`/wallet/transactions/${organizationId}/`);
+};
+
+export const getUtilityVends = (orgId: string): Promise<UtilityVend[]> => {
+  return authApi<UtilityVend[]>(`/organizations/${orgId}/utility-vends/`);
 };
 
 // Meter Related Endpoints
