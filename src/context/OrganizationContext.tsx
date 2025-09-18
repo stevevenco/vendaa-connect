@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Organization, Transaction } from "@/types";
+import { Organization, Transaction, PaginatedResponse } from "@/types";
 import { getWalletBalance, createWallet, ApiError, getTransactions } from "@/services/api";
 import { useAuth } from "@/context/AuthContext";
 import { OrganizationContext } from "./organizationContext";
@@ -17,6 +17,8 @@ export const OrganizationProvider = ({
   const [isBalanceLoading, setIsBalanceLoading] = useState(false);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isTransactionsLoading, setIsTransactionsLoading] = useState(false);
+  const [transactionsTotalPages, setTransactionsTotalPages] = useState(0);
+  const [transactionsCount, setTransactionsCount] = useState(0);
 
   const fetchWalletBalance = useCallback(async (organizationId: string) => {
     setIsBalanceLoading(true);
@@ -42,11 +44,13 @@ export const OrganizationProvider = ({
     }
   }, []);
 
-  const fetchTransactions = useCallback(async (organizationId: string) => {
+  const fetchTransactions = useCallback(async (organizationId: string, page: number = 1) => {
     setIsTransactionsLoading(true);
     try {
-      const transactionsData = await getTransactions(organizationId);
-      setTransactions(transactionsData);
+      const transactionsData = await getTransactions(organizationId, page);
+      setTransactions(transactionsData.results);
+      setTransactionsTotalPages(transactionsData.total_pages);
+      setTransactionsCount(transactionsData.count);
     } catch (error) {
       console.error("Failed to fetch transactions:", error);
       setTransactions([]);
@@ -107,6 +111,8 @@ export const OrganizationProvider = ({
         fetchWalletBalance,
         isBalanceLoading,
         transactions,
+        transactionsTotalPages,
+        transactionsCount,
         fetchTransactions,
         isTransactionsLoading,
       }}

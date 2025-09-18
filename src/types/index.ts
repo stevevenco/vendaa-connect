@@ -197,11 +197,22 @@ export interface BankTransferPaymentOption extends BasePaymentOption {
 
 export type PaymentOption = OnlineCheckoutPaymentOption | BankTransferPaymentOption;
 
+export interface PaginatedResponse<T> {
+  links: {
+    next: string | null;
+    previous: string | null;
+  };
+  count: number;
+  total_pages: number;
+  results: T[];
+}
+
 export interface Transaction {
   transaction_id: string;
   title: string;
   amount: string;
   status: string;
+  event: string;
   created_at: string;
 }
 

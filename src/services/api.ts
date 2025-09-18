@@ -25,6 +25,7 @@ import {
   Transaction,
   TCreateApiKeySchema,
   UtilityCost,
+  PaginatedResponse,
 } from "@/types";
 import { UtilityVend } from "@/types/dashboard";
 
@@ -310,8 +311,8 @@ export const initiateWalletFunding = (
   );
 };
 
-export const getTransactions = (organizationId: string): Promise<Transaction[]> => {
-  return authApi<Transaction[]>(`/wallet/transactions/${organizationId}/`);
+export const getTransactions = (organizationId: string, page: number = 1, pageSize: number = 10): Promise<PaginatedResponse<Transaction>> => {
+  return authApi<PaginatedResponse<Transaction>>(`/wallet/transactions/${organizationId}/?page=${page}&page_size=${pageSize}`);
 };
 
 export const getUtilityVends = (orgId: string): Promise<UtilityVend[]> => {
@@ -319,8 +320,8 @@ export const getUtilityVends = (orgId: string): Promise<UtilityVend[]> => {
 };
 
 // Meter Related Endpoints
-export const getMeters = (orgId: string): Promise<Meter[]> => {
-  return authApi<Meter[]>(`/organizations/${orgId}/meters/`);
+export const getMeters = (orgId: string, page: number = 1, pageSize: number = 10): Promise<PaginatedResponse<Meter>> => {
+  return authApi<PaginatedResponse<Meter>>(`/organizations/${orgId}/meters/?page=${page}&page_size=${pageSize}`);
 };
 
 export const createMeter = (
