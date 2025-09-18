@@ -45,8 +45,8 @@ export default function WalletPage() {
         </div>
       </div>
 
-      <div className="w-full">
-        <Card className="w-full min-w-[160px] snap-start md:min-w-0 bg-gradient-to-br from-primary to-primary-glow text-primary-foreground">
+      <div className="w-[160px]">
+        <Card className="w-[160px] min-w-[160px] snap-start md:min-w-0 bg-gradient-to-br from-primary to-primary-glow text-primary-foreground">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-xs sm:text-sm flex items-center gap-2">
               <Wallet className="h-4 w-4" />
@@ -66,7 +66,7 @@ export default function WalletPage() {
             {isLoading ? (
               <Skeleton className="h-8 w-3/4" />
             ) : (
-              <div className="text-lg sm:text-2xl font-bold">
+              <div className="text-lg mt-1 font-bold">
                 {walletBalance ?? "₦0.00"}
               </div>
             )}
@@ -83,7 +83,7 @@ export default function WalletPage() {
           <TabsTrigger value="history" className="text-sm sm:text-base">Transaction History</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="topup" className="space-y-4">
+        <TabsContent value="topup" className="w-[320px] space-y-4">
           <Card>
             <CardHeader>
               <CardTitle className="text-base sm:text-lg flex items-center gap-2">

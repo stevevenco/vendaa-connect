@@ -253,8 +253,8 @@ export const GenerateTokenSchema = z.object({
     "ditk",
   ]),
   meter_number: z.string().min(1, "Meter number is required"),
-  amount: z.number().optional(),
-  utility_units: z.number().optional(),
+  amount: z.coerce.number().min(1),
+  utility_units: z.coerce.number().optional(),
   subclass: z.number().optional(),
 });
 

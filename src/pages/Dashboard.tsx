@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Wallet, Plus, RefreshCw } from "lucide-react";
+import { Wallet, Plus, RefreshCw, TrendingUp, Gauge, Zap } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
 import { dummyTransactions, dummyMeters } from "@/data/dummyData";
 import { useOrganizations } from "@/hooks/useOrganizations";
@@ -101,7 +101,7 @@ export default function Dashboard() {
       </div>
 
       {/* Stats Cards */}
-      <div className="w-full">
+      <div className="flex md:grid md:gap-4 md:grid-cols-2 lg:grid-cols-4 overflow-x-auto snap-x snap-mandatory space-x-4 md:space-x-0 pb-4">
         <Card className="w-full bg-gradient-to-br from-primary to-primary-glow text-primary-foreground">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-xs sm:text-sm font-medium">Wallet Balance</CardTitle>
@@ -122,12 +122,38 @@ export default function Dashboard() {
             {isLoading ? (
               <Skeleton className="h-8 w-3/4" />
             ) : (
-              <div className="text-lg sm:text-2xl font-bold">
+              <div className="text-lg mt-1 font-bold">
                 {walletBalance ?? "₦0.00"}
               </div>
             )}
             <p className="text-xs text-primary-foreground/80">
               Available for vending
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Active Meters</CardTitle>
+            <Gauge className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{2}</div>
+            <p className="text-xs text-muted-foreground">
+              2 meters added this week
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Vends Today</CardTitle>
+            <Zap className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">23</div>
+            <p className="text-xs text-muted-foreground">
+              +3 from yesterday
             </p>
           </CardContent>
         </Card>
