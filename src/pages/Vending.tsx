@@ -110,6 +110,7 @@ export default function VendingPage() {
   const tabOptions = [
     { value: "credit", label: "Credit Purchase" },
     { value: "engineering", label: "Engineering Tokens" },
+    { value: "management", label: "Management Tokens" },
     // Remote Operations is paused for now
     // { value: "remote", label: "Remote Operations" },
   ];
@@ -366,8 +367,8 @@ export default function VendingPage() {
 
         {activeTab === "credit" && renderCreditPurchaseForm()}
         {activeTab === "engineering" && <EngineeringTokenCard meters={meters} />}
-        {/* {activeTab === "remote" && <RemoteOperationCard />} */}
-        {activeTab === "management" && <ManagementTokenCard />}
+        {/* {active-tab === "remote" && <RemoteOperationCard />} */}
+        {activeTab === "management" && <ManagementTokenCard meters={meters} loading={loading} />}
       </div>
 
       {/* Desktop View: Tabs */}
@@ -389,7 +390,7 @@ export default function VendingPage() {
         </TabsContent>
 
         <TabsContent value="management" className="space-y-4">
-          <ManagementTokenCard />
+          <ManagementTokenCard meters={meters} loading={loading} />
         </TabsContent>
 
         {/* <TabsContent value="remote" className="space-y-4">

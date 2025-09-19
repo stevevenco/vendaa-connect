@@ -279,11 +279,31 @@ export const GenerateTokenSchema = z.object({
     "clear_tamper",
     "test",
     "ditk",
+    "mgtk",
   ]),
   meter_number: z.string().min(1, "Meter number is required"),
-  amount: z.coerce.number().min(1),
+  amount: z.coerce.number().min(1).optional(),
   utility_units: z.coerce.number().optional(),
   subclass: z.number().optional(),
+  operation: z.string().optional(),
+  action: z.string().optional(),
+}).superRefine((data, ctx) => {
+  if (data.token_type === 'mgtk') {
+    if (!data.operation) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['operation'],
+        message: 'Operation is required',
+      });
+    }
+    if (!data.action) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['action'],
+        message: 'Action is required',
+      });
+    }
+  }
 });
 
 export type TGenerateTokenSchema = z.infer<typeof GenerateTokenSchema>;
@@ -296,11 +316,14 @@ export interface GenerateTokenRequest {
     | "clear_credit"
     | "clear_tamper"
     | "test"
-    | "ditk";
+    | "ditk"
+    | "mgtk";
   meter_number: string;
   amount?: number;
   utility_units?: number;
   subclass?: number;
+  operation?: string;
+  action?: string;
 }
 
 export interface CreditTokenResponse {
