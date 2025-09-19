@@ -467,23 +467,25 @@ export default function OrganizationPage() {
                 <TableCell>
                   {new Date(member.joined_at).toLocaleDateString()}
                 </TableCell>
-                <TableCell className="text-right space-x-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setEditingMember(member)}
-                    disabled={editingMember?.uuid === member.uuid}
-                  >
-                    Edit Role
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    onClick={() => removeMemberMutation.mutate(member.uuid)}
-                    disabled={removeMemberMutation.isPending}
-                  >
-                    Remove
-                  </Button>
+                <TableCell className="text-right">
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setEditingMember(member)}
+                      disabled={editingMember?.uuid === member.uuid}
+                    >
+                      Edit Role
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => removeMemberMutation.mutate(member.uuid)}
+                      disabled={removeMemberMutation.isPending}
+                    >
+                      Remove
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
