@@ -22,13 +22,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { CreditCard, Info } from "lucide-react";
 import { generateToken, getMeters, getUtilityCosts } from "@/services/api";
@@ -48,6 +41,10 @@ import EngineeringTokenCard from "@/components/EngineeringTokenCard";
 import RemoteOperationCard from "@/components/RemoteOperationCard";
 import TokenDisplayDialog from "@/components/TokenDisplayDialog";
 import { UtilityCostsDialog } from "@/components/UtilityCostsDialog";
+import MeterSearch from "@/components/MeterSearch";
+import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
+import { SelectValue } from "@radix-ui/react-select";
+import ManagementTokenCard from "@/components/ManagementTokenCard";
 
 export default function VendingPage() {
   const [meters, setMeters] = useState<Meter[]>([]);
@@ -70,7 +67,7 @@ export default function VendingPage() {
   // Add pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [pageSize] = useState(10); // Adjust as needed
+  const [pageSize] = useState(1000); // Adjust as needed
 
   const form = useForm<TGenerateTokenSchema>({
     resolver: zodResolver(GenerateTokenSchema),
@@ -206,35 +203,14 @@ export default function VendingPage() {
                 control={form.control}
                 name="meter_number"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Select Meter</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                      disabled={loading}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue
-                            placeholder={
-                              loading
-                                ? "Loading meters..."
-                                : "Choose meter number"
-                            }
-                          />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {meters.map((meter) => (
-                          <SelectItem
-                            key={meter.uuid}
-                            value={meter.meter_number}
-                          >
-                            {meter.meter_number} - {meter.customer_name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Choose Meter</FormLabel>
+                    <MeterSearch
+                      meters={meters}
+                      selectedMeter={field.value}
+                      onSelect={field.onChange}
+                      loading={loading}
+                    />
                     <FormMessage />
                   </FormItem>
                 )}
@@ -390,7 +366,8 @@ export default function VendingPage() {
 
         {activeTab === "credit" && renderCreditPurchaseForm()}
         {activeTab === "engineering" && <EngineeringTokenCard meters={meters} />}
-        {activeTab === "remote" && <RemoteOperationCard />}
+        {/* {activeTab === "remote" && <RemoteOperationCard />} */}
+        {activeTab === "management" && <ManagementTokenCard />}
       </div>
 
       {/* Desktop View: Tabs */}
@@ -398,6 +375,7 @@ export default function VendingPage() {
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="credit">Credit Purchase</TabsTrigger>
           <TabsTrigger value="engineering">Engineering Tokens</TabsTrigger>
+          <TabsTrigger value="management">Management Tokens</TabsTrigger>
           {/* Remote Operations is paused for now */}
           {/* <TabsTrigger value="remote">Remote Operations</TabsTrigger> */}
         </TabsList>
@@ -410,9 +388,13 @@ export default function VendingPage() {
           <EngineeringTokenCard meters={meters} />
         </TabsContent>
 
-        <TabsContent value="remote" className="space-y-4">
-          <RemoteOperationCard />
+        <TabsContent value="management" className="space-y-4">
+          <ManagementTokenCard />
         </TabsContent>
+
+        {/* <TabsContent value="remote" className="space-y-4">
+          <RemoteOperationCard />
+        </TabsContent> */}
       </Tabs>
     </div>
   );
