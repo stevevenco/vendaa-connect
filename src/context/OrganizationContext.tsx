@@ -44,10 +44,10 @@ export const OrganizationProvider = ({
     }
   }, []);
 
-  const fetchTransactions = useCallback(async (organizationId: string, page: number = 1) => {
+  const fetchTransactions = useCallback(async (organizationId: string, page: number = 1, month: string | null = null) => {
     setIsTransactionsLoading(true);
     try {
-      const transactionsData = await getTransactions(organizationId, page);
+      const transactionsData = await getTransactions(organizationId, page, 10, month);
       setTransactions(transactionsData.results);
       setTransactionsTotalPages(transactionsData.total_pages);
       setTransactionsCount(transactionsData.count);
@@ -76,16 +76,14 @@ export const OrganizationProvider = ({
       if (savedOrg) {
         setSelectedOrganization(savedOrg);
         fetchWalletBalance(savedOrg.uuid);
-        fetchTransactions(savedOrg.uuid);
       } else {
         setSelectedOrganization(orgs[0]);
         fetchWalletBalance(orgs[0].uuid);
-        fetchTransactions(orgs[0].uuid);
         localStorage.setItem("selectedOrganizationId", orgs[0].uuid);
       }
     }
     setIsLoading(false);
-  }, [user, isAuthLoading, fetchWalletBalance, fetchTransactions]);
+  }, [user, isAuthLoading, fetchWalletBalance]);
 
   const switchOrganization = (organizationUuid: string) => {
     const organization = organizations.find(
@@ -94,7 +92,7 @@ export const OrganizationProvider = ({
     if (organization) {
       setSelectedOrganization(organization);
       fetchWalletBalance(organization.uuid);
-      fetchTransactions(organization.uuid);
+      // Transactions will be fetched by the WalletPage component
       localStorage.setItem("selectedOrganizationId", organization.uuid);
     }
   };

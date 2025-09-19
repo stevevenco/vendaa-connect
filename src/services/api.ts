@@ -311,8 +311,12 @@ export const initiateWalletFunding = (
   );
 };
 
-export const getTransactions = (organizationId: string, page: number = 1, pageSize: number = 10): Promise<PaginatedResponse<Transaction>> => {
-  return authApi<PaginatedResponse<Transaction>>(`/wallet/transactions/${organizationId}/?page=${page}&page_size=${pageSize}`);
+export const getTransactions = (organizationId: string, page: number = 1, pageSize: number = 10, month: string | null = null): Promise<PaginatedResponse<Transaction>> => {
+  let url = `/wallet/transactions/${organizationId}/?page=${page}&page_size=${pageSize}`;
+  if (month && month !== "all") {
+    url += `&month=${month}`;
+  }
+  return authApi<PaginatedResponse<Transaction>>(url);
 };
 
 export const getUtilityVends = (orgId: string): Promise<UtilityVend[]> => {

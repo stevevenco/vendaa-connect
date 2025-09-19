@@ -31,6 +31,15 @@ import {
   TableRow
 } from "@/components/ui/table";
 import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import {
   Gauge,
   Plus,
   Search,
@@ -45,7 +54,7 @@ import {
 } from "lucide-react";
 import { useOrganizations } from "@/hooks/useOrganizations";
 import { getMeters, createMeter, deleteMeter, ApiError } from "@/services/api";
-import { Meter, CreateMeterSchema, TCreateMeterSchema } from "@/types";
+import { Meter, CreateMeterSchema, TCreateMeterSchema, PaginatedResponse } from "@/types";
 import { useToast } from "@/components/ui/use-toast";
 import {
   AlertDialog,
@@ -62,22 +71,26 @@ export default function MetersPage() {
   const { selectedOrganization } = useOrganizations();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
-  const [meters, setMeters] = useState<Meter[]>([]);
+  const [metersResponse, setMetersResponse] = useState<PaginatedResponse<Meter> | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState("list");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
 
   const [meterToDelete, setMeterToDelete] = useState<Meter | null>(null);
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
 
-  const fetchMeters = useCallback(async () => {
+  const fetchMeters = useCallback(async (page = 1, size = 10) => {
     if (!selectedOrganization) return;
     setIsLoading(true);
     setError(null);
     try {
-      const data = await getMeters(selectedOrganization.uuid);
-      setMeters(data);
+      const data = await getMeters(selectedOrganization.uuid, page, size);
+      setMetersResponse(data);
+      setCurrentPage(page);
     } catch (err) {
       setError("Failed to fetch meters.");
       console.error(err);
@@ -87,8 +100,10 @@ export default function MetersPage() {
   }, [selectedOrganization]);
 
   useEffect(() => {
-    fetchMeters();
-  }, [fetchMeters]);
+    if (selectedOrganization) {
+      fetchMeters(currentPage, pageSize);
+    }
+  }, [selectedOrganization, currentPage, pageSize, fetchMeters]);
 
   const form = useForm<TCreateMeterSchema>({
     resolver: zodResolver(CreateMeterSchema),
@@ -115,7 +130,7 @@ export default function MetersPage() {
         description: "Meter created successfully.",
       });
       form.reset();
-      fetchMeters(); // Refresh the list
+      fetchMeters(1, pageSize); // Refresh the list to the first page
       setActiveTab("list");
     } catch (err) {
       if (err instanceof ApiError) {
@@ -144,7 +159,8 @@ export default function MetersPage() {
         title: "Success",
         description: "Meter deleted successfully.",
       });
-      fetchMeters(); // Refresh the list
+      // Refresh the current page
+      fetchMeters(currentPage, pageSize);
     } catch (err) {
       toast({
         variant: "destructive",
@@ -161,6 +177,8 @@ export default function MetersPage() {
     setMeterToDelete(meter);
     setIsDeleteAlertOpen(true);
   };
+
+  const meters = metersResponse?.results || [];
 
   const filteredMeters = meters.filter(meter =>
     meter.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -180,6 +198,48 @@ export default function MetersPage() {
   const truncateText = (text: string, maxLength: number = 20) => {
     return text.length > maxLength ? `${text.substring(0, maxLength)}...` : text;
   };
+  
+  const handlePageChange = (page: number) => {
+    fetchMeters(page, pageSize);
+  };
+
+  const getPaginationRange = (totalPages: number, currentPage: number, siblingCount: number = 1) => {
+    const totalPageNumbers = siblingCount + 5;
+
+    if (totalPageNumbers >= totalPages) {
+        return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+
+    const leftSiblingIndex = Math.max(currentPage - siblingCount, 1);
+    const rightSiblingIndex = Math.min(currentPage + siblingCount, totalPages);
+
+    const shouldShowLeftDots = leftSiblingIndex > 2;
+    const shouldShowRightDots = rightSiblingIndex < totalPages - 2;
+
+    const firstPageIndex = 1;
+    const lastPageIndex = totalPages;
+
+    if (!shouldShowLeftDots && shouldShowRightDots) {
+        let leftItemCount = 3 + 2 * siblingCount;
+        let leftRange = Array.from({ length: leftItemCount }, (_, i) => i + 1);
+        return [...leftRange, '...', totalPages];
+    }
+
+    if (shouldShowLeftDots && !shouldShowRightDots) {
+        let rightItemCount = 3 + 2 * siblingCount;
+        let rightRange = Array.from({ length: rightItemCount }, (_, i) => totalPages - rightItemCount + i + 1);
+        return [firstPageIndex, '...', ...rightRange];
+    }
+
+    if (shouldShowLeftDots && shouldShowRightDots) {
+        let middleRange = Array.from({ length: rightSiblingIndex - leftSiblingIndex + 1 }, (_, i) => leftSiblingIndex + i);
+        return [firstPageIndex, '...', ...middleRange, '...', lastPageIndex];
+    }
+    return [];
+  };
+  
+  const paginationRange = metersResponse ? getPaginationRange(metersResponse.total_pages, currentPage) : [];
+
 
   return (
     <div className="space-y-6 p-4">
@@ -209,7 +269,7 @@ export default function MetersPage() {
             <Gauge className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-lg sm:text-2xl font-bold">{isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : meters.length}</div>
+            <div className="text-lg sm:text-2xl font-bold">{isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : metersResponse?.count ?? 0}</div>
             <p className="text-xs text-muted-foreground">
               Across all utility types
             </p>
@@ -281,6 +341,9 @@ export default function MetersPage() {
                   className="max-w-sm text-sm"
                 />
               </div>
+              <CardDescription className="text-xs sm:text-sm pt-2">
+                The search will be applied to the current page only.
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <Table>
@@ -369,6 +432,58 @@ export default function MetersPage() {
                   )}
                 </TableBody>
               </Table>
+               <div className="mt-4 flex justify-between items-center">
+                <div className="text-sm text-muted-foreground">
+                  Page {currentPage} of {metersResponse?.total_pages}
+                </div>
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (metersResponse?.links?.previous) {
+                            handlePageChange(currentPage - 1);
+                          }
+                        }}
+                        className={!metersResponse?.links?.previous ? "pointer-events-none opacity-50" : ""}
+                      />
+                    </PaginationItem>
+                    {paginationRange.map((pageNumber, index) => {
+                      if (pageNumber === '...') {
+                        return <PaginationEllipsis key={`ellipsis-${index}`} />;
+                      }
+                      return (
+                        <PaginationItem key={pageNumber}>
+                          <PaginationLink
+                            href="#"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              handlePageChange(pageNumber as number);
+                            }}
+                            isActive={currentPage === pageNumber}
+                          >
+                            {pageNumber}
+                          </PaginationLink>
+                        </PaginationItem>
+                      );
+                    })}
+                    <PaginationItem>
+                      <PaginationNext
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (metersResponse?.links?.next) {
+                            handlePageChange(currentPage + 1);
+                          }
+                        }}
+                        className={!metersResponse?.links?.next ? "pointer-events-none opacity-50" : ""}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
