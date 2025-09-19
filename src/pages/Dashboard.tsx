@@ -2,23 +2,13 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Wallet, Plus, RefreshCw } from "lucide-react";
+import { Wallet, Plus, RefreshCw, Gauge, Zap } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
-import { dummyTransactions, dummyMeters } from "@/data/dummyData";
 import { useOrganizations } from "@/hooks/useOrganizations";
 import { useTopUp } from "@/hooks/useTopUp";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
-const chartData = [
-  { month: "Jan", electricity: 45000, water: 18000, gas: 12000 },
-  { month: "Feb", electricity: 52000, water: 21000, gas: 15000 },
-  { month: "Mar", electricity: 48000, water: 19000, gas: 13000 },
-  { month: "Apr", electricity: 58000, water: 23000, gas: 17000 },
-  { month: "May", electricity: 63000, water: 25000, gas: 19000 },
-  { month: "Jun", electricity: 61000, water: 24000, gas: 18000 },
-];
-
+import { useDashboardData } from "@/hooks/useDashboardData";
 import { Transaction } from "@/types";
 
 // Helper function to process transactions for the wallet activity chart
@@ -51,15 +41,14 @@ const processTransactionsForChart = (transactions: Transaction[], month: number,
 export default function Dashboard() {
   const {
     walletBalance,
-    isLoading,
+    isLoading: isOrgLoading,
     selectedOrganization,
     fetchWalletBalance,
     isBalanceLoading,
     transactions,
-    isTransactionsLoading,
   } = useOrganizations();
   const { openModal } = useTopUp();
-  const recentVends = dummyTransactions.filter(t => t.type === 'credit_purchase').slice(0, 5);
+  const { data: dashboardData, isLoading: isDashboardLoading } = useDashboardData();
 
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth() + 1);
   const [walletActivityData, setWalletActivityData] = useState<any[]>([]);
@@ -79,6 +68,8 @@ export default function Dashboard() {
   const truncateText = (text: string, maxLength: number = 20) => {
     return text.length > maxLength ? `${text.substring(0, maxLength)}...` : text;
   };
+
+  const isLoading = isOrgLoading || isDashboardLoading;
 
   return (
     <div className="space-y-6 p-4">
@@ -101,8 +92,8 @@ export default function Dashboard() {
       </div>
 
       {/* Stats Cards */}
-      <div className="w-full">
-        <Card className="w-full bg-gradient-to-br from-primary to-primary-glow text-primary-foreground">
+      <div className="flex md:grid md:gap-4 md:grid-cols-2 lg:grid-cols-4 overflow-x-auto snap-x snap-mandatory space-x-4 md:space-x-0 pb-4">
+        <Card className="w-72 flex-shrink-0 md:w-auto bg-gradient-to-br from-primary to-primary-glow text-primary-foreground">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-xs sm:text-sm font-medium">Wallet Balance</CardTitle>
             <div className="flex items-center gap-2">
@@ -122,12 +113,46 @@ export default function Dashboard() {
             {isLoading ? (
               <Skeleton className="h-8 w-3/4" />
             ) : (
-              <div className="text-lg sm:text-2xl font-bold">
+              <div className="text-lg mt-1 font-bold">
                 {walletBalance ?? "₦0.00"}
               </div>
             )}
             <p className="text-xs text-primary-foreground/80">
               Available for vending
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="w-72 flex-shrink-0 md:w-auto">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Active Meters</CardTitle>
+            <Gauge className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <Skeleton className="h-8 w-1/2" />
+            ) : (
+              <div className="text-2xl font-bold">{dashboardData.activeMeters}</div>
+            )}
+            <p className="text-xs text-muted-foreground">
+              Total active meters
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="w-72 flex-shrink-0 md:w-auto">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Vends Today</CardTitle>
+            <Zap className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <Skeleton className="h-8 w-1/2" />
+            ) : (
+              <div className="text-2xl font-bold">{dashboardData.vendsToday}</div>
+            )}
+            <p className="text-xs text-muted-foreground">
+              Transactions made today
             </p>
           </CardContent>
         </Card>
@@ -139,21 +164,19 @@ export default function Dashboard() {
           <CardHeader>
             <CardTitle className="text-base sm:text-lg">Utility Vends Overview</CardTitle>
             <CardDescription className="text-xs sm:text-sm">
-              Monthly vending activity across all utility types
+              Monthly vending activity
             </CardDescription>
           </CardHeader>
           <CardContent className="pl-2">
             <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={chartData}>
+              <BarChart data={dashboardData.chartData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" tick={{ fontSize: 12 }} />
                 <YAxis tick={{ fontSize: 12 }} />
                 <Tooltip 
-                  formatter={(value: number) => [`₦${value.toLocaleString()}`, '']}
+                  formatter={(value: number) => [`₦${value.toLocaleString()}`, 'Amount']}
                 />
-                <Bar dataKey="electricity" fill="hsl(var(--primary))" name="Electricity" />
-                <Bar dataKey="water" fill="hsl(var(--accent))" name="Water" />
-                <Bar dataKey="gas" fill="hsl(var(--warning))" name="Gas" />
+                <Bar dataKey="amount" fill="hsl(var(--primary))" name="Vends" />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -164,34 +187,46 @@ export default function Dashboard() {
           <CardHeader>
             <CardTitle className="text-base sm:text-lg">Recent Vends</CardTitle>
             <CardDescription className="text-xs sm:text-sm">
-              Latest utility credit purchases
+              Your 5 most recent vends
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {recentVends.map((vend) => (
-                <div
-                  key={vend.id}
-                  className="flex items-center justify-between space-x-4"
-                >
-                  <div className="space-y-1">
-                    <p className="text-xs sm:text-sm font-medium">
-                      {truncateText(vend.meterNumber)}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(vend.date).toLocaleDateString()}
-                    </p>
+              {isLoading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="flex items-center justify-between space-x-4">
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-[150px]" />
+                      <Skeleton className="h-4 w-[100px]" />
+                    </div>
+                    <Skeleton className="h-8 w-[80px]" />
                   </div>
-                  <div className="flex flex-col items-end">
-                    <Badge variant="secondary" className="text-xs sm:text-sm">
-                      ₦{vend.amount.toLocaleString()}
-                    </Badge>
-                    <p className="text-xs text-muted-foreground">
-                      {truncateText(vend.token || '')}
-                    </p>
+                ))
+              ) : (
+                dashboardData.recentVends.map((vend) => (
+                  <div
+                    key={vend.vend_reference}
+                    className="flex items-center justify-between space-x-4"
+                  >
+                    <div className="space-y-1">
+                      <p className="text-xs sm:text-sm font-medium">
+                        {truncateText(vend.meter)}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(vend.created).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <div className="flex flex-col items-end">
+                      <Badge variant="secondary" className="text-xs sm:text-sm">
+                        ₦{parseFloat(vend.amount).toLocaleString()}
+                      </Badge>
+                      <p className="text-xs text-muted-foreground">
+                        {truncateText(vend.vend_reference || '')}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </CardContent>
         </Card>
@@ -203,7 +238,7 @@ export default function Dashboard() {
           <div>
             <CardTitle className="text-base sm:text-lg">Wallet Activity Trend</CardTitle>
             <CardDescription className="text-xs sm:text-sm">
-              Track your wallet balance and spending patterns over time
+              Track your wallet spending patterns over time
             </CardDescription>
           </div>
           <Select value={currentMonth.toString()} onValueChange={(value) => setCurrentMonth(parseInt(value))}>

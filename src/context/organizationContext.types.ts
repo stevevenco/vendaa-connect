@@ -10,7 +10,9 @@ export interface OrganizationContextType {
   fetchWalletBalance: (organizationId: string) => void;
   isBalanceLoading: boolean;
   transactions: Transaction[];
-  fetchTransactions: (organizationId: string) => void;
+  transactionsTotalPages: number;
+  transactionsCount: number;
+  fetchTransactions: (organizationId: string, page?: number) => void;
   isTransactionsLoading: boolean;
 }
 

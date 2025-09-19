@@ -25,7 +25,9 @@ import {
   Transaction,
   TCreateApiKeySchema,
   UtilityCost,
+  PaginatedResponse,
 } from "@/types";
+import { UtilityVend } from "@/types/dashboard";
 
 const LOCAL_API_URL: string = import.meta.env.VITE_LOCAL_API_URL || "http://localhost:8000";
 const STAGING_API_URL: string = import.meta.env.VITE_STAGING_API_URL || "https://vendaa-be.onrender.com";
@@ -309,13 +311,21 @@ export const initiateWalletFunding = (
   );
 };
 
-export const getTransactions = (organizationId: string): Promise<Transaction[]> => {
-  return authApi<Transaction[]>(`/wallet/transactions/${organizationId}/`);
+export const getTransactions = (organizationId: string, page: number = 1, pageSize: number = 10, month: string | null = null): Promise<PaginatedResponse<Transaction>> => {
+  let url = `/wallet/transactions/${organizationId}/?page=${page}&page_size=${pageSize}`;
+  if (month && month !== "all") {
+    url += `&month=${month}`;
+  }
+  return authApi<PaginatedResponse<Transaction>>(url);
+};
+
+export const getUtilityVends = (orgId: string): Promise<UtilityVend[]> => {
+  return authApi<UtilityVend[]>(`/organizations/${orgId}/utility-vends/`);
 };
 
 // Meter Related Endpoints
-export const getMeters = (orgId: string): Promise<Meter[]> => {
-  return authApi<Meter[]>(`/organizations/${orgId}/meters/`);
+export const getMeters = (orgId: string, page: number = 1, pageSize: number = 10): Promise<PaginatedResponse<Meter>> => {
+  return authApi<PaginatedResponse<Meter>>(`/organizations/${orgId}/meters/?page=${page}&page_size=${pageSize}`);
 };
 
 export const createMeter = (
