@@ -42,12 +42,37 @@ export const RegisterSchema = z
     last_name: z.string().min(1, {
       message: "Last name is required.",
     }),
+    phone_code: z.string().optional(),
     phone_number: z.string().optional(),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords do not match.",
     path: ["confirmPassword"],
-  });
+  })
+  .refine(
+    (data) => {
+      if (data.phone_number && !data.phone_code) {
+        return false;
+      }
+      return true;
+    },
+    {
+      message: "Country code is required",
+      path: ["phone_code"],
+    }
+  )
+  .refine(
+    (data) => {
+      if (data.phone_code && !data.phone_number) {
+        return false;
+      }
+      return true;
+    },
+    {
+      message: "Phone number is required",
+      path: ["phone_number"],
+    }
+  );
 
 export type TRegisterSchema = z.infer<typeof RegisterSchema>;
 
