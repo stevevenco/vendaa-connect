@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { getMeters, getUtilityVends } from '@/services/api';
 import { useOrganizations } from './useOrganizations';
 import { DashboardData, UtilityVend } from '@/types/dashboard';
+import { PaginatedResponse, Meter } from '@/types'; // Import PaginatedResponse and Meter if not already
 
 export const useDashboardData = () => {
   const { selectedOrganization } = useOrganizations();
@@ -20,13 +21,13 @@ export const useDashboardData = () => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const [meters, utilityVends] = await Promise.all([
+        const [metersResponse, utilityVends] = await Promise.all([
           getMeters(selectedOrganization.uuid),
           getUtilityVends(selectedOrganization.uuid),
         ]);
 
-        // Process active meters
-        const activeMeters = meters.length;
+        // Use metersResponse.count for the total number of meters
+        const activeMeters = metersResponse.count ?? 0;
 
         // Process vends today
         const today = new Date().toISOString().split('T')[0];

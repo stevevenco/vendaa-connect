@@ -235,13 +235,30 @@ export interface Meter {
 
 export const CreateMeterSchema = z.object({
   customer_name: z.string().min(1, "Customer name is required"),
-  meter_number: z.string().min(1, "Meter number is required"),
+  meter_number: z
+    .string()
+    .regex(/^\d+$/, "Meter number must contain only digits")
+    .min(1, "Meter number is required"),
   email: z.string().email("Invalid email address"),
   phone: z.string().min(1, "Phone number is required"),
   address: z.string().min(1, "Address is required"),
-  sgc: z.string().min(1, "SGC is required"),
-  tariff_index: z.string().min(1, "Tariff index is required"),
-  key_revision_number: z.string().min(1, "Key revision number is required"),
+  sgc: z
+    .string()
+    .regex(/^\d{6}$/, "SGC must be exactly 6 digits"),
+  tariff_index: z
+    .string()
+    .regex(/^\d{1,2}$/, "Tariff index must be 1–2 digits")
+    .refine((val) => {
+      const num = Number(val);
+      return num >= 1 && num <= 99;
+    }, "Tariff index must be between 1 and 99"),
+  key_revision_number: z
+    .string()
+    .regex(/^\d$/, "Key revision number must be a single digit")
+    .refine((val) => {
+      const num = Number(val);
+      return num >= 1 && num <= 2;
+    }, "Key revision number must be 1 or 2"),
   meter_type: z.enum(["electricity", "water", "gas"]),
 });
 

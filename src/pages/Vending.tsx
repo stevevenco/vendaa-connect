@@ -42,6 +42,7 @@ import {
   GenerateTokenSchema,
   TGenerateTokenSchema,
   UtilityCost,
+  PaginatedResponse,
 } from "@/types";
 import EngineeringTokenCard from "@/components/EngineeringTokenCard";
 import RemoteOperationCard from "@/components/RemoteOperationCard";
@@ -66,6 +67,10 @@ export default function VendingPage() {
     { description: string; token: string }[]
   >([]);
   const [dialogTitle, setDialogTitle] = useState("");
+  // Add pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [pageSize] = useState(10); // Adjust as needed
 
   const form = useForm<TGenerateTokenSchema>({
     resolver: zodResolver(GenerateTokenSchema),
@@ -87,10 +92,11 @@ export default function VendingPage() {
         try {
           setLoading(true);
           const [fetchedMeters, fetchedUtilityCosts] = await Promise.all([
-            getMeters(activeOrganization.uuid),
+            getMeters(activeOrganization.uuid, currentPage, pageSize),
             getUtilityCosts(),
           ]);
-          setMeters(fetchedMeters);
+          setMeters(fetchedMeters.results); // Set to results array
+          setTotalPages(fetchedMeters.total_pages); // Store total pages
           setUtilityCosts(fetchedUtilityCosts);
           setError(null);
         } catch (err) {
@@ -102,7 +108,7 @@ export default function VendingPage() {
     };
 
     fetchData();
-  }, [activeOrganization]);
+  }, [activeOrganization, currentPage, pageSize]);
 
   const tabOptions = [
     { value: "credit", label: "Credit Purchase" },

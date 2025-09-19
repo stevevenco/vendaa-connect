@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -33,9 +33,7 @@ import {
 import {
   Pagination,
   PaginationContent,
-  PaginationEllipsis,
   PaginationItem,
-  PaginationLink,
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
@@ -202,43 +200,6 @@ export default function MetersPage() {
   const handlePageChange = (page: number) => {
     fetchMeters(page, pageSize);
   };
-
-  const getPaginationRange = (totalPages: number, currentPage: number, siblingCount: number = 1) => {
-    const totalPageNumbers = siblingCount + 5;
-
-    if (totalPageNumbers >= totalPages) {
-        return Array.from({ length: totalPages }, (_, i) => i + 1);
-    }
-
-    const leftSiblingIndex = Math.max(currentPage - siblingCount, 1);
-    const rightSiblingIndex = Math.min(currentPage + siblingCount, totalPages);
-
-    const shouldShowLeftDots = leftSiblingIndex > 2;
-    const shouldShowRightDots = rightSiblingIndex < totalPages - 2;
-
-    const firstPageIndex = 1;
-    const lastPageIndex = totalPages;
-
-    if (!shouldShowLeftDots && shouldShowRightDots) {
-        let leftItemCount = 3 + 2 * siblingCount;
-        let leftRange = Array.from({ length: leftItemCount }, (_, i) => i + 1);
-        return [...leftRange, '...', totalPages];
-    }
-
-    if (shouldShowLeftDots && !shouldShowRightDots) {
-        let rightItemCount = 3 + 2 * siblingCount;
-        let rightRange = Array.from({ length: rightItemCount }, (_, i) => totalPages - rightItemCount + i + 1);
-        return [firstPageIndex, '...', ...rightRange];
-    }
-
-    if (shouldShowLeftDots && shouldShowRightDots) {
-        let middleRange = Array.from({ length: rightSiblingIndex - leftSiblingIndex + 1 }, (_, i) => leftSiblingIndex + i);
-        return [firstPageIndex, '...', ...middleRange, '...', lastPageIndex];
-    }
-    return [];
-  };
-  
-  const paginationRange = metersResponse ? getPaginationRange(metersResponse.total_pages, currentPage) : [];
 
 
   return (
@@ -432,58 +393,43 @@ export default function MetersPage() {
                   )}
                 </TableBody>
               </Table>
-               <div className="mt-4 flex justify-between items-center">
-                <div className="text-sm text-muted-foreground">
-                  Page {currentPage} of {metersResponse?.total_pages}
-                </div>
-                <Pagination>
-                  <PaginationContent>
-                    <PaginationItem>
-                      <PaginationPrevious
-                        href="#"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          if (metersResponse?.links?.previous) {
+              {metersResponse && metersResponse.total_pages > 1 ? (
+                <CardFooter className="flex justify-center pt-4">
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious
+                          href="#"
+                          onClick={(e) => {
+                            e.preventDefault();
                             handlePageChange(currentPage - 1);
-                          }
-                        }}
-                        className={!metersResponse?.links?.previous ? "pointer-events-none opacity-50" : ""}
-                      />
-                    </PaginationItem>
-                    {paginationRange.map((pageNumber, index) => {
-                      if (pageNumber === '...') {
-                        return <PaginationEllipsis key={`ellipsis-${index}`} />;
-                      }
-                      return (
-                        <PaginationItem key={pageNumber}>
-                          <PaginationLink
-                            href="#"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              handlePageChange(pageNumber as number);
-                            }}
-                            isActive={currentPage === pageNumber}
-                          >
-                            {pageNumber}
-                          </PaginationLink>
-                        </PaginationItem>
-                      );
-                    })}
-                    <PaginationItem>
-                      <PaginationNext
-                        href="#"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          if (metersResponse?.links?.next) {
+                          }}
+                          className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
+                        />
+                      </PaginationItem>
+                      <PaginationItem>
+                        <span className="text-sm font-medium">
+                          Page {currentPage} of {metersResponse.total_pages}
+                        </span>
+                      </PaginationItem>
+                      <PaginationItem>
+                        <PaginationNext
+                          href="#"
+                          onClick={(e) => {
+                            e.preventDefault();
                             handlePageChange(currentPage + 1);
-                          }
-                        }}
-                        className={!metersResponse?.links?.next ? "pointer-events-none opacity-50" : ""}
-                      />
-                    </PaginationItem>
-                  </PaginationContent>
-                </Pagination>
-              </div>
+                          }}
+                          className={currentPage === metersResponse.total_pages ? "pointer-events-none opacity-50" : ""}
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                </CardFooter>
+              ) : (
+                <div className="text-center text-sm text-muted-foreground pt-4">
+                  {metersResponse ? `Only one page available (Total pages: ${metersResponse.total_pages})` : "No meters data loaded"}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
