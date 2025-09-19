@@ -19,19 +19,46 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   TCreateOrganizationSchema,
   CreateOrganizationSchema,
 } from "@/types";
 import { createOrganization } from "@/services/api";
 import { useToast } from "@/components/ui/use-toast";
+import { useEffect, useState } from "react";
+import countriesData from "../../countries.json";
+
+interface Country {
+  name: string;
+  uuid: string;
+}
 
 export default function CreateOrganizationPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [countries, setCountries] = useState<Country[]>([]);
+
+  useEffect(() => {
+    const loadedCountries = Object.entries(countriesData).map(
+      ([name, uuid]) => ({
+        name: name.charAt(0).toUpperCase() + name.slice(1), // Capitalize first letter
+        uuid,
+      })
+    );
+    setCountries(loadedCountries);
+  }, []);
+
   const form = useForm<TCreateOrganizationSchema>({
     resolver: zodResolver(CreateOrganizationSchema),
     defaultValues: {
       name: "",
+      country: "",
     },
   });
 
@@ -42,6 +69,8 @@ export default function CreateOrganizationPage() {
         title: "Organization Created",
         description: "Your organization has been created successfully.",
       });
+      // In a real app, you might want to refresh the user's data
+      // to get the new organization details and then navigate.
       navigate("/");
     } catch (error) {
       toast({
@@ -55,11 +84,11 @@ export default function CreateOrganizationPage() {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-950">
-      <Card className="mx-auto max-w-sm">
+      <Card className="mx-auto max-w-sm w-full">
         <CardHeader>
           <CardTitle className="text-2xl">Create Organization</CardTitle>
           <CardDescription>
-            Enter a name for your organization to get started.
+            Enter a name and country for your organization to get started.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -74,6 +103,30 @@ export default function CreateOrganizationPage() {
                     <FormControl>
                       <Input placeholder="Acme Inc." {...field} />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="country"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Country</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a country" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {countries.map((country) => (
+                          <SelectItem key={country.uuid} value={country.uuid}>
+                            {country.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}

@@ -1,15 +1,14 @@
 import { useState, useEffect, useCallback } from "react";
-import { Organization, User, Transaction } from "@/types";
-import { getMe, getWalletBalance, createWallet, ApiError, getTransactions } from "@/services/api";
-import { useAuth } from "@/hooks/useAuth";
+import { Organization, Transaction } from "@/types";
+import { getWalletBalance, createWallet, ApiError, getTransactions } from "@/services/api";
+import { useAuth } from "@/context/AuthContext";
 import { OrganizationContext } from "./organizationContext";
 import { OrganizationProviderProps } from "./organizationContext.types";
 
 export const OrganizationProvider = ({
   children,
 }: OrganizationProviderProps) => {
-  const { logout } = useAuth();
-  const [user, setUser] = useState<User | null>(null);
+  const { user, isLoading: isAuthLoading } = useAuth();
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [selectedOrganization, setSelectedOrganization] =
     useState<Organization | null>(null);
@@ -57,41 +56,32 @@ export const OrganizationProvider = ({
   }, []);
 
   useEffect(() => {
-    const fetchInitialData = async () => {
-      try {
-        const userData: User = await getMe();
-        setUser(userData);
-        if (userData.organizations && userData.organizations.length > 0) {
-          const orgs = userData.organizations;
-          setOrganizations(orgs);
-          
-          const savedOrgId = localStorage.getItem('selectedOrganizationId');
-          const savedOrg = savedOrgId ? orgs.find(org => org.uuid === savedOrgId) : null;
+    if (isAuthLoading) {
+      return; // Wait for auth check to complete
+    }
+    setIsLoading(true);
+    if (user && user.organizations && user.organizations.length > 0) {
+      const orgs = user.organizations;
+      setOrganizations(orgs);
 
-          if (savedOrg) {
-            setSelectedOrganization(savedOrg);
-            fetchWalletBalance(savedOrg.uuid);
-            fetchTransactions(savedOrg.uuid);
-          } else {
-            setSelectedOrganization(orgs[0]);
-            fetchWalletBalance(orgs[0].uuid);
-            fetchTransactions(orgs[0].uuid);
-            localStorage.setItem('selectedOrganizationId', orgs[0].uuid);
-          }
-        }
-      } catch (error) {
-        if (error instanceof ApiError && error.status === 401) {
-          logout();
-        } else {
-          console.error("Failed to fetch organizations", error);
-        }
-      } finally {
-        setIsLoading(false);
+      const savedOrgId = localStorage.getItem("selectedOrganizationId");
+      const savedOrg = savedOrgId
+        ? orgs.find((org) => org.uuid === savedOrgId)
+        : null;
+
+      if (savedOrg) {
+        setSelectedOrganization(savedOrg);
+        fetchWalletBalance(savedOrg.uuid);
+        fetchTransactions(savedOrg.uuid);
+      } else {
+        setSelectedOrganization(orgs[0]);
+        fetchWalletBalance(orgs[0].uuid);
+        fetchTransactions(orgs[0].uuid);
+        localStorage.setItem("selectedOrganizationId", orgs[0].uuid);
       }
-    };
-
-    fetchInitialData();
-  }, [fetchWalletBalance, fetchTransactions]);
+    }
+    setIsLoading(false);
+  }, [user, isAuthLoading, fetchWalletBalance, fetchTransactions]);
 
   const switchOrganization = (organizationUuid: string) => {
     const organization = organizations.find(
@@ -101,7 +91,7 @@ export const OrganizationProvider = ({
       setSelectedOrganization(organization);
       fetchWalletBalance(organization.uuid);
       fetchTransactions(organization.uuid);
-      localStorage.setItem('selectedOrganizationId', organization.uuid);
+      localStorage.setItem("selectedOrganizationId", organization.uuid);
     }
   };
 
@@ -111,7 +101,7 @@ export const OrganizationProvider = ({
         organizations,
         selectedOrganization,
         switchOrganization,
-        isLoading,
+        isLoading: isLoading || isAuthLoading,
         user,
         walletBalance,
         fetchWalletBalance,

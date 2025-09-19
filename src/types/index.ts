@@ -16,6 +16,17 @@ export interface AuthResponse {
   access: string;
 }
 
+// Define Organization early because other interfaces use it
+export interface Organization {
+  uuid: string;
+  name: string;
+  created_by: string;
+  created: string;
+  country: string; // Country UUID
+  currency: string;
+  role?: string;
+}
+
 export const RegisterSchema = z
   .object({
     email: z.string().email({
@@ -44,6 +55,8 @@ export interface RegisterResponse {
   email: string;
   first_name: string;
   last_name: string;
+  phone_number: string;
+  organizations: Organization[];
 }
 
 export const RequestOtpSchema = z.object({
@@ -69,9 +82,8 @@ export const OtpVerifySchema = z.object({
 export type TOtpVerifySchema = z.infer<typeof OtpVerifySchema>;
 
 export const UpdateProfileSchema = z.object({
-  email: z.string().email(),
-  first_name: z.string().min(1, "First name is required"),
-  last_name: z.string().min(1, "Last name is required"),
+  first_name: z.string().min(1, "First name is required").optional(),
+  last_name: z.string().min(1, "Last name is required").optional(),
   phone_number: z.string().optional(),
 });
 
@@ -96,19 +108,12 @@ export const CreateOrganizationSchema = z.object({
   name: z.string().min(1, {
     message: "Organization name is required.",
   }),
+  country: z.string().uuid({ message: "Country is required." }),
 });
 
 export type TCreateOrganizationSchema = z.infer<
   typeof CreateOrganizationSchema
 >;
-
-export interface Organization {
-  uuid: string;
-  name: string;
-  created_by: string;
-  created: string;
-  role?: string; // Role is part of the user-organization link, but let's keep it optional here
-}
 
 export interface User {
   email: string;
@@ -145,7 +150,7 @@ export interface OrganizationMember {
 
 export const AddMemberSchema = z.object({
   email: z.string().email(),
-  role: z.enum(["admin", "member"]),
+  role: z.enum(["owner", "admin", "member"]),
 });
 
 export type TAddMemberSchema = z.infer<typeof AddMemberSchema>;
@@ -155,19 +160,6 @@ export const UpdateMemberRoleSchema = z.object({
 });
 
 export type TUpdateMemberRoleSchema = z.infer<typeof UpdateMemberRoleSchema>;
-
-export const ResetPasswordSchema = z
-  .object({
-    email: z.string().email(),
-    otp_code: z.string(),
-    new_password: z.string().min(8, "Password must be at least 8 characters."),
-    confirm_password: z.string(),
-  })
-  .refine((data) => data.new_password === data.confirm_password, {
-    message: "Passwords do not match.",
-    path: ["confirm_password"],
-  });
-export type TResetPasswordSchema = z.infer<typeof ResetPasswordSchema>;
 
 export interface OrganizationInvite {
   token: string;
@@ -244,10 +236,43 @@ export const CreateMeterSchema = z.object({
 
 export type TCreateMeterSchema = z.infer<typeof CreateMeterSchema>;
 
+export const UpdateMeterSchema = CreateMeterSchema.omit({
+  meter_number: true,
+}).partial();
+
+export type TUpdateMeterSchema = z.infer<typeof UpdateMeterSchema>;
+
+export const GenerateTokenSchema = z.object({
+  token_type: z.enum([
+    "credit",
+    "kct",
+    "mse",
+    "clear_credit",
+    "clear_tamper",
+    "test",
+    "ditk",
+  ]),
+  meter_number: z.string().min(1, "Meter number is required"),
+  amount: z.number().optional(),
+  utility_units: z.number().optional(),
+  subclass: z.number().optional(),
+});
+
+export type TGenerateTokenSchema = z.infer<typeof GenerateTokenSchema>;
+
 export interface GenerateTokenRequest {
-  token_type: "kct" | "credit" | "clear_credit";
+  token_type:
+    | "credit"
+    | "kct"
+    | "mse"
+    | "clear_credit"
+    | "clear_tamper"
+    | "test"
+    | "ditk";
   meter_number: string;
-  amount: number;
+  amount?: number;
+  utility_units?: number;
+  subclass?: number;
 }
 
 export interface CreditTokenResponse {
@@ -266,12 +291,30 @@ export type TokenResponse = CreditTokenResponse | KctTokenResponse;
 // API Key related types
 export interface ApiKey {
   uuid: string;
+  key_id: string;
+  key_type: "public" | "secret";
+  key_type_display: string;
   name: string;
-  prefix: string;
-  created: string;
-  last_used: string | null;
+  is_active: boolean;
+  created_at: string;
+  last_used_at: string | null;
+  scopes: string[];
 }
 
-export interface CreateApiKeyResponse {
-  key: string;
+export const CreateApiKeySchema = z.object({
+  name: z.string().min(3, "API key name must be at least 3 characters long"),
+  key_type: z.enum(["public", "secret"]),
+});
+export type TCreateApiKeySchema = z.infer<typeof CreateApiKeySchema>;
+
+export interface CreateApiKeyResponse extends Omit<ApiKey, 'last_used_at'> {
+  full_key: string;
+}
+
+export interface UtilityCost {
+  uuid: string;
+  name: string;
+  cost: string;
+  created: string;
+  last_updated: string;
 }

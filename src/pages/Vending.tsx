@@ -1,68 +1,119 @@
 import { useState, useEffect } from "react";
 import { useOutletContext } from "react-router-dom";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { 
-  Zap, 
-  Droplets, 
-  Flame, 
-  CreditCard, 
-} from "lucide-react";
-import { generateToken, getMeters } from "@/services/api";
+import { CreditCard, Info } from "lucide-react";
+import { generateToken, getMeters, getUtilityCosts } from "@/services/api";
 import { ApiError } from "@/services/api";
 import { useToast } from "@/components/ui/use-toast";
-import { Meter, Organization, TokenResponse, CreditTokenResponse, KctTokenResponse } from "@/types";
+import {
+  Meter,
+  Organization,
+  CreditTokenResponse,
+  KctTokenResponse,
+  GenerateTokenSchema,
+  TGenerateTokenSchema,
+  UtilityCost,
+} from "@/types";
 import EngineeringTokenCard from "@/components/EngineeringTokenCard";
 import RemoteOperationCard from "@/components/RemoteOperationCard";
 import TokenDisplayDialog from "@/components/TokenDisplayDialog";
+import { UtilityCostsDialog } from "@/components/UtilityCostsDialog";
 
 export default function VendingPage() {
-  const [selectedMeter, setSelectedMeter] = useState("");
-  const [amount, setAmount] = useState("");
-  const [purchaseType, setPurchaseType] = useState("amount");
   const [meters, setMeters] = useState<Meter[]>([]);
+  const [utilityCosts, setUtilityCosts] = useState<UtilityCost[]>([]);
   const [loading, setLoading] = useState(true);
   const [tokenGenerating, setTokenGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("credit");
-  const { activeOrganization } = useOutletContext<{ activeOrganization: Organization | null }>();
+  const { activeOrganization } = useOutletContext<{
+    activeOrganization: Organization | null;
+  }>();
   const { toast } = useToast();
   const [isTokenDialogOpen, setIsTokenDialogOpen] = useState(false);
-  const [generatedTokens, setGeneratedTokens] = useState<{ description: string; token: string }[]>([]);
+  const [isUtilityCostsDialogOpen, setIsUtilityCostsDialogOpen] =
+    useState(false);
+  const [generatedTokens, setGeneratedTokens] = useState<
+    { description: string; token: string }[]
+  >([]);
   const [dialogTitle, setDialogTitle] = useState("");
 
+  const form = useForm<TGenerateTokenSchema>({
+    resolver: zodResolver(GenerateTokenSchema),
+    defaultValues: {
+      token_type: "credit",
+      meter_number: "",
+      amount: 0,
+    },
+  });
+
+  const [purchaseMethod, setPurchaseMethod] = useState<"amount" | "units">(
+    "amount"
+  );
+  const selectedMeterNumber = form.watch("meter_number");
+
   useEffect(() => {
-    const fetchMeters = async () => {
+    const fetchData = async () => {
       if (activeOrganization) {
         try {
           setLoading(true);
-          const fetchedMeters = await getMeters(activeOrganization.uuid);
+          const [fetchedMeters, fetchedUtilityCosts] = await Promise.all([
+            getMeters(activeOrganization.uuid),
+            getUtilityCosts(),
+          ]);
           setMeters(fetchedMeters);
+          setUtilityCosts(fetchedUtilityCosts);
           setError(null);
         } catch (err) {
-          setError("Failed to fetch meters. Please try again later.");
+          setError("Failed to fetch data. Please try again later.");
         } finally {
           setLoading(false);
         }
       }
     };
 
-    fetchMeters();
+    fetchData();
   }, [activeOrganization]);
 
   const tabOptions = [
     { value: "credit", label: "Credit Purchase" },
     { value: "engineering", label: "Engineering Tokens" },
-    { value: "remote", label: "Remote Operations" },
+    // Remote Operations is paused for now
+    // { value: "remote", label: "Remote Operations" },
   ];
 
-  const selectedMeterDetails = meters.find(m => m.meter_number === selectedMeter);
+  const selectedMeterDetails = meters.find(
+    (m) => m.meter_number === selectedMeterNumber
+  );
 
   const getUnit = (meterType: string | undefined) => {
     switch (meterType) {
@@ -73,21 +124,51 @@ export default function VendingPage() {
     }
   };
 
-  const handleGenerateToken = async () => {
-    if (!activeOrganization || !selectedMeter || !amount) return;
+  const getDialogTitle = (tokenType: string) => {
+    const titles: { [key: string]: string } = {
+      credit: "Credit Token Generated",
+      kct: "KCT Token Generated",
+      mse: "MSE Token Generated",
+      clear_credit: "Clear Credit Token Generated",
+      clear_tamper: "Clear Tamper Token Generated",
+      test: "Test Token Generated",
+      ditk: "DITK Token Generated",
+    };
+    return titles[tokenType] || "Token Generated";
+  };
+
+  const onSubmit = async (values: TGenerateTokenSchema) => {
+    if (!activeOrganization) return;
+
+    const payload: any = {
+      token_type: "credit",
+      meter_number: values.meter_number,
+    };
+
+    if (purchaseMethod === "amount") {
+      payload.amount = values.amount;
+    } else {
+      payload.utility_units = values.utility_units;
+    }
 
     setTokenGenerating(true);
     try {
-      const response = await generateToken(activeOrganization.uuid, {
-        meter_number: selectedMeter,
-        token_type: 'credit',
-        amount: Number(amount),
-      });
+      const response = await generateToken(activeOrganization.uuid, payload);
 
-      const tokenData = response as CreditTokenResponse;
-      setDialogTitle("Credit Token Generated");
-      setGeneratedTokens([{ description: "Credit Token", token: tokenData.token }]);
+      if (Array.isArray(response)) {
+        setDialogTitle(getDialogTitle(payload.token_type));
+        setGeneratedTokens(response as KctTokenResponse);
+      } else {
+        setDialogTitle(getDialogTitle(payload.token_type));
+        setGeneratedTokens([
+          {
+            description: "Credit Token",
+            token: (response as CreditTokenResponse).token,
+          },
+        ]);
+      }
       setIsTokenDialogOpen(true);
+      form.reset();
     } catch (error) {
       const apiError = error as ApiError;
       toast({
@@ -112,81 +193,140 @@ export default function VendingPage() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="grid gap-4 md:grid-cols-2">
-          <div className="space-y-2">
-            <Label>Select Meter</Label>
-            <Select value={selectedMeter} onValueChange={setSelectedMeter} disabled={loading}>
-              <SelectTrigger>
-                <SelectValue placeholder={loading ? "Loading meters..." : "Choose meter number"} />
-              </SelectTrigger>
-              <SelectContent>
-                {meters.map((meter) => (
-                  <SelectItem key={meter.uuid} value={meter.meter_number}>
-                    {meter.meter_number} - {meter.customer_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label>Purchase Type</Label>
-            <RadioGroup
-              defaultValue="amount"
-              className="flex items-center space-x-4"
-              onValueChange={setPurchaseType}
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <div className="grid gap-4 md:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="meter_number"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Select Meter</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      disabled={loading}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue
+                            placeholder={
+                              loading
+                                ? "Loading meters..."
+                                : "Choose meter number"
+                            }
+                          />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {meters.map((meter) => (
+                          <SelectItem
+                            key={meter.uuid}
+                            value={meter.meter_number}
+                          >
+                            {meter.meter_number} - {meter.customer_name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormItem>
+                <FormLabel>Purchase Type</FormLabel>
+                <RadioGroup
+                  onValueChange={(value) =>
+                    setPurchaseMethod(value as "amount" | "units")
+                  }
+                  defaultValue={purchaseMethod}
+                  className="flex items-center space-x-4"
+                >
+                  <FormItem className="flex items-center space-x-2">
+                    <FormControl>
+                      <RadioGroupItem value="amount" />
+                    </FormControl>
+                    <FormLabel>Amount (NGN)</FormLabel>
+                  </FormItem>
+                  <FormItem className="flex items-center space-x-2">
+                    <FormControl>
+                      <RadioGroupItem value="units" />
+                    </FormControl>
+                    <FormLabel>
+                      Units ({getUnit(selectedMeterDetails?.meter_type)})
+                    </FormLabel>
+                  </FormItem>
+                </RadioGroup>
+              </FormItem>
+            </div>
+            {purchaseMethod === "amount" ? (
+              <FormField
+                control={form.control}
+                name="amount"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Amount (NGN)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        placeholder="Enter amount"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            ) : (
+              <FormField
+                control={form.control}
+                name="utility_units"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      Number of Units (
+                      {getUnit(selectedMeterDetails?.meter_type)})
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        placeholder="Enter number of units"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+            {selectedMeterDetails && (
+              <Card className="bg-muted/50">
+                <CardContent className="pt-4">
+                  <h4 className="font-medium mb-2">Meter Information</h4>
+                  <div className="grid gap-2 text-sm">
+                    <div className="flex justify-between">
+                      <span>Customer:</span>
+                      <span>{selectedMeterDetails.customer_name}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Meter Type:</span>
+                      <Badge variant="outline" className="capitalize">
+                        {selectedMeterDetails.meter_type}
+                      </Badge>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            <Button
+              type="submit"
+              className="w-full bg-gradient-to-r from-primary to-primary-glow"
+              disabled={loading || tokenGenerating}
             >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="amount" id="amount" />
-                <Label htmlFor="amount">Amount (NGN)</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="units" id="units" />
-                <Label htmlFor="units">Units ({getUnit(selectedMeterDetails?.meter_type)})</Label>
-              </div>
-            </RadioGroup>
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <Label>
-            {purchaseType === 'amount' ? 'Amount (NGN)' : `Number of Units (${getUnit(selectedMeterDetails?.meter_type)})`}
-          </Label>
-          <Input
-            type="number"
-            placeholder={purchaseType === 'amount' ? "Enter amount" : "Enter number of units"}
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            min="1"
-          />
-        </div>
-
-        {selectedMeter && selectedMeterDetails && (
-          <Card className="bg-muted/50">
-            <CardContent className="pt-4">
-              <h4 className="font-medium mb-2">Meter Information</h4>
-              <div className="grid gap-2 text-sm">
-                <div className="flex justify-between">
-                  <span>Customer:</span>
-                  <span>{selectedMeterDetails.customer_name}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Meter Type:</span>
-                  <Badge variant="outline" className="capitalize">
-                    {selectedMeterDetails.meter_type}
-                  </Badge>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        <Button
-          className="w-full bg-gradient-to-r from-primary to-primary-glow"
-          disabled={!selectedMeter || !amount || loading || tokenGenerating}
-          onClick={handleGenerateToken}
-        >
-          {tokenGenerating ? "Generating..." : "Generate Credit Token"}
-        </Button>
+              {tokenGenerating ? "Generating..." : "Generate Credit Token"}
+            </Button>
+          </form>
+        </Form>
       </CardContent>
     </Card>
   );
@@ -195,11 +335,21 @@ export default function VendingPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Vending Operations</h1>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Vending Operations
+          </h1>
           <p className="text-muted-foreground">
             Generate utility credits and engineering tokens for your meters.
           </p>
         </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setIsUtilityCostsDialogOpen(true)}
+        >
+          <Info className="mr-2 h-4 w-4" />
+          View Costs
+        </Button>
       </div>
 
       {error && <p className="text-red-500">{error}</p>}
@@ -209,6 +359,12 @@ export default function VendingPage() {
         onClose={() => setIsTokenDialogOpen(false)}
         title={dialogTitle}
         tokens={generatedTokens}
+      />
+
+      <UtilityCostsDialog
+        open={isUtilityCostsDialogOpen}
+        onOpenChange={setIsUtilityCostsDialogOpen}
+        utilityCosts={utilityCosts}
       />
 
       {/* Mobile View: Dropdown */}
@@ -236,7 +392,8 @@ export default function VendingPage() {
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="credit">Credit Purchase</TabsTrigger>
           <TabsTrigger value="engineering">Engineering Tokens</TabsTrigger>
-          <TabsTrigger value="remote">Remote Operations</TabsTrigger>
+          {/* Remote Operations is paused for now */}
+          {/* <TabsTrigger value="remote">Remote Operations</TabsTrigger> */}
         </TabsList>
 
         <TabsContent value="credit" className="space-y-4">
