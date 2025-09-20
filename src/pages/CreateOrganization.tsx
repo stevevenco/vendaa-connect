@@ -43,12 +43,13 @@ interface Country {
   uuid: string;
 }
 
+const countriesData = COUNTRY_DATA();
+
 export default function CreateOrganizationPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { checkAuth } = useAuth();
   const [countries, setCountries] = useState<Country[]>([]);
-  const countriesData = COUNTRY_DATA;
 
   useEffect(() => {
     const loadedCountries = Object.entries(countriesData).map(
