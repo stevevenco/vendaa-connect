@@ -32,7 +32,10 @@ import {
 import { createOrganization } from "@/services/api";
 import { useToast } from "@/components/ui/use-toast";
 import { useEffect, useState } from "react";
-import countriesData from "../../countries.json";
+// import countriesData from "../../countries.json";
+// import countriesData from "@/data/countries_staging.json"
+// import countriesData from "../../countries.json";
+import { COUNTRY_DATA } from "@/services/api"
 import { useAuth } from "@/context/AuthContext";
 
 interface Country {
@@ -45,6 +48,7 @@ export default function CreateOrganizationPage() {
   const { toast } = useToast();
   const { checkAuth } = useAuth();
   const [countries, setCountries] = useState<Country[]>([]);
+  const countriesData = COUNTRY_DATA;
 
   useEffect(() => {
     const loadedCountries = Object.entries(countriesData).map(
