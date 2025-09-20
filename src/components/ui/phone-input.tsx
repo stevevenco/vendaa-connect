@@ -7,7 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import countries from "../../../phone_number_codes.json";
+import countries from "@/data/phone_number_codes.json";
 
 interface PhoneInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   onCountryChange: (value: string) => void;

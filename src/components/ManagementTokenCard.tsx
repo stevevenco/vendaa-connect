@@ -40,7 +40,7 @@ import {
 } from "@/types";
 import MeterSearch from "./MeterSearch";
 import TokenDisplayDialog from "./TokenDisplayDialog";
-import managementTokens from "../../management_tokens.json";
+import managementTokens from "@/data/management_tokens.json";
 
 interface ManagementTokenCardProps {
   meters: Meter[];

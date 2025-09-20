@@ -28,6 +28,8 @@ import {
   PaginatedResponse,
 } from "@/types";
 import { UtilityVend } from "@/types/dashboard";
+import stagingCountriesData from "@/data/countries_staging.json"
+import localCountriesData from "@/data/countries.json"
 
 const LOCAL_API_URL: string = import.meta.env.VITE_LOCAL_API_URL || "http://localhost:8000";
 const STAGING_API_URL: string = import.meta.env.VITE_STAGING_API_URL || "https://vendaa-be.onrender.com";
@@ -37,6 +39,18 @@ const API_VERSION: string = import.meta.env.VITE_API_VERSION || "api/v1";
 const env: string = import.meta.env.VITE_ENV || "development";
 
 let API_URL: string = "";
+// export const COUNTRY_DATA;
+
+export const COUNTRY_DATA = () => {
+  if (env === "development") {
+    return localCountriesData;
+  } else if (env === "staging") {
+    return stagingCountriesData;
+  } else {
+    return localCountriesData;
+  }
+};
+
 if (env === "development") {
   API_URL = LOCAL_API_URL;
 } else if (env === "staging") {
