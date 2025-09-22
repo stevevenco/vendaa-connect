@@ -152,7 +152,7 @@ export default function Dashboard() {
               <div className="text-2xl font-bold">{dashboardData.vendsToday}</div>
             )}
             <p className="text-xs text-muted-foreground">
-              Transactions made today
+              Vends made today
             </p>
           </CardContent>
         </Card>

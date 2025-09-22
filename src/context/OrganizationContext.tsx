@@ -1,6 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
 import { Organization, Transaction, PaginatedResponse } from "@/types";
-import { getWalletBalance, createWallet, ApiError, getTransactions } from "@/services/api";
+import {
+  getWalletBalance,
+  createWallet,
+  ApiError,
+  getTransactions,
+  switchDisplayState,
+} from "@/services/api";
 import { useAuth } from "@/context/AuthContext";
 import { OrganizationContext } from "./organizationContext";
 import { OrganizationProviderProps } from "./organizationContext.types";
@@ -8,7 +14,7 @@ import { OrganizationProviderProps } from "./organizationContext.types";
 export const OrganizationProvider = ({
   children,
 }: OrganizationProviderProps) => {
-  const { user, isLoading: isAuthLoading } = useAuth();
+  const { user, isLoading: isAuthLoading, checkAuth } = useAuth();
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [selectedOrganization, setSelectedOrganization] =
     useState<Organization | null>(null);
@@ -92,8 +98,22 @@ export const OrganizationProvider = ({
     if (organization) {
       setSelectedOrganization(organization);
       fetchWalletBalance(organization.uuid);
-      // Transactions will be fetched by the WalletPage component
       localStorage.setItem("selectedOrganizationId", organization.uuid);
+
+      if (organization.is_verified && user) {
+        const shouldBeTest = organization.is_sandbox;
+        const isTest = user.display_state === "test";
+
+        if (shouldBeTest && !isTest) {
+          switchDisplayState("test", organization.uuid).then(() => {
+            checkAuth();
+          });
+        } else if (!shouldBeTest && isTest) {
+          switchDisplayState("live", organization.uuid).then(() => {
+            checkAuth();
+          });
+        }
+      }
     }
   };
 

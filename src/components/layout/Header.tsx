@@ -13,6 +13,12 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/context/AuthContext";
 import { useOrganization } from "@/context/useOrganization";
+import { Link } from "react-router-dom";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { switchDisplayState } from "@/services/api";
+import { toast } from "sonner";
+import { useState } from "react";
 
 // Function to truncate text longer than 20 characters
 const truncateText = (text: string, maxLength: number = 20) => {
@@ -20,13 +26,29 @@ const truncateText = (text: string, maxLength: number = 20) => {
 };
 
 export function Header() {
-  const { logout, user } = useAuth();
+  const { logout, user, checkAuth } = useAuth();
   const {
     organizations,
     selectedOrganization,
     switchOrganization,
     isLoading,
   } = useOrganization();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSwitchChange = async (checked: boolean) => {
+    if (!selectedOrganization) return;
+    setIsSubmitting(true);
+    const new_state = checked ? "live" : "test";
+    try {
+      await switchDisplayState(new_state, selectedOrganization.uuid);
+      toast.success(`Switched to ${new_state} mode`);
+      checkAuth();
+    } catch (error) {
+      toast.error("Failed to switch mode");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <header className="flex h-16 items-center justify-between border-b bg-card px-4 sm:px-6">
@@ -40,7 +62,9 @@ export function Header() {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="flex items-center gap-2">
                   <h2 className="text-lg font-semibold text-foreground truncate max-w-[150px] sm:max-w-[200px]">
-                    {truncateText(selectedOrganization?.name || "Select Organization")}
+                    {truncateText(
+                      selectedOrganization?.name || "Select Organization"
+                    )}
                   </h2>
                   <ChevronsUpDown className="h-4 w-4 text-muted-foreground" />
                 </Button>
@@ -57,9 +81,34 @@ export function Header() {
               </DropdownMenuContent>
             </DropdownMenu>
           )}
-          <Badge variant="secondary" className="text-xs hidden md:inline-flex">
-            Organization
-          </Badge>
+          {selectedOrganization && !selectedOrganization.is_verified && (
+            <Link to="/verify-organization">
+              <Badge variant="destructive" className="text-xs">
+                Test Mode
+              </Badge>
+            </Link>
+          )}
+
+          {selectedOrganization && selectedOrganization.is_verified && user && (
+            <div className="flex items-center space-x-2">
+              <Label
+                htmlFor="display-state-switch"
+                className={
+                  user.display_state === "test"
+                    ? "text-red-500"
+                    : "text-green-500"
+                }
+              >
+                {user.display_state === "test" ? "Test" : "Live"}
+              </Label>
+              <Switch
+                id="display-state-switch"
+                checked={user.display_state === "live"}
+                onCheckedChange={handleSwitchChange}
+                disabled={isSubmitting}
+              />
+            </div>
+          )}
         </div>
       </div>
 
