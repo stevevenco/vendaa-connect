@@ -25,6 +25,7 @@ export interface Organization {
   country: string; // Country UUID
   currency: string;
   role?: string;
+  is_sandbox: boolean;
 }
 
 export const RegisterSchema = z

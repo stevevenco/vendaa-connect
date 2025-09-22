@@ -518,12 +518,25 @@ export default function MetersPage() {
                         <FormItem>
                           <FormLabel className="text-xs sm:text-sm">SGC</FormLabel>
                           <FormControl>
-                            <Input placeholder="Enter SGC" {...field} className="text-sm" />
+                            <Input
+                              type="text"
+                              inputMode="numeric" // mobile numeric keypad
+                              pattern="\d*"
+                              placeholder="6-digit SGC e.g. 123456"
+                              {...field}
+                              className="text-sm"
+                              onChange={(e) => {
+                                // Only allow digits
+                                const val = e.target.value.replace(/\D/g, "");
+                                field.onChange(val);
+                              }}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
+
                     <FormField
                       control={form.control}
                       name="tariff_index"
@@ -531,12 +544,24 @@ export default function MetersPage() {
                         <FormItem>
                           <FormLabel className="text-xs sm:text-sm">Tariff Index</FormLabel>
                           <FormControl>
-                            <Input placeholder="T1, T2, etc." {...field} className="text-sm" />
+                            <Input
+                              type="text"
+                              inputMode="numeric"
+                              pattern="\d*"
+                              placeholder="Enter tariff index (1–99)"
+                              {...field}
+                              className="text-sm"
+                              onChange={(e) => {
+                                const val = e.target.value.replace(/\D/g, "");
+                                field.onChange(val);
+                              }}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
+
                     <FormField
                       control={form.control}
                       name="key_revision_number"
@@ -544,12 +569,24 @@ export default function MetersPage() {
                         <FormItem>
                           <FormLabel className="text-xs sm:text-sm">Key Revision Number</FormLabel>
                           <FormControl>
-                            <Input placeholder="001, 002, etc." {...field} className="text-sm" />
+                            <Input
+                              type="text"
+                              inputMode="numeric"
+                              pattern="\d*"
+                              placeholder="Enter 1 or 2"
+                              {...field}
+                              className="text-sm"
+                              onChange={(e) => {
+                                const val = e.target.value.replace(/\D/g, "");
+                                field.onChange(val);
+                              }}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
+
                     <FormField
                       control={form.control}
                       name="meter_type"
