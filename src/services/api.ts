@@ -452,3 +452,17 @@ export const generateToken = (
     body: JSON.stringify(data),
   });
 };
+
+export const switchDisplayState = (
+  display_state: "live" | "test",
+  organization: string
+): Promise<void> => {
+  return authApi<void>(
+    `/auth/switch-state/`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ display_state, organization }),
+    },
+    false
+  );
+};

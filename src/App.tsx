@@ -25,6 +25,7 @@ import CreateOrganizationPage from "./pages/CreateOrganization";
 import AcceptInvitePage from "./pages/AcceptInvite";
 import ResetPasswordPage from "./pages/ResetPassword";
 import VerifyAccountPage from "./pages/VerifyAccount";
+import VerifyOrganization from "./pages/VerifyOrganization";
 
 const queryClient = new QueryClient();
 
@@ -64,6 +65,10 @@ const App = () => (
                 <Route path="settings" element={<SettingsPage />} />
                 <Route path="organization" element={<OrganizationPage />} />
                 <Route path="developer" element={<DeveloperPage />} />
+                <Route
+                  path="verify-organization"
+                  element={<VerifyOrganization />}
+                />
               </Route>
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

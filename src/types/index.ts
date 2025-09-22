@@ -26,6 +26,7 @@ export interface Organization {
   currency: string;
   role?: string;
   is_sandbox: boolean;
+  is_verified: boolean;
 }
 
 export const RegisterSchema = z
@@ -147,6 +148,8 @@ export interface User {
   last_name: string;
   phone_number: string | null;
   organizations: Organization[];
+  is_verified: boolean;
+  display_state: "test" | "live";
 }
 
 export const UpdateOrganizationSchema = z.object({
