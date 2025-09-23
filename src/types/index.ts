@@ -181,13 +181,31 @@ export interface OrganizationMember {
 
 export const AddMemberSchema = z.object({
   email: z.string().email(),
-  role: z.enum(["owner", "admin", "member"]),
+  role: z.enum([
+    "owner",
+    "admin",
+    "member",
+    "auditor",
+    "finance_manager",
+    "operations_manager",
+    "support_agent",
+    "developer",
+  ]),
 });
 
 export type TAddMemberSchema = z.infer<typeof AddMemberSchema>;
 
 export const UpdateMemberRoleSchema = z.object({
-  role: z.enum(["admin", "member", "owner"]),
+  role: z.enum([
+    "admin",
+    "member",
+    "owner",
+    "auditor",
+    "finance_manager",
+    "operations_manager",
+    "support_agent",
+    "developer",
+  ]),
 });
 
 export type TUpdateMemberRoleSchema = z.infer<typeof UpdateMemberRoleSchema>;
@@ -264,15 +282,17 @@ export interface Meter {
   last_updated: string;
 }
 
-export const CreateMeterSchema = z.object({
-  customer_name: z.string().min(1, "Customer name is required"),
-  meter_number: z
-    .string()
-    .regex(/^\d+$/, "Meter number must contain only digits")
-    .min(1, "Meter number is required"),
-  email: z.string().email("Invalid email address"),
-  phone: z.string().min(1, "Phone number is required"),
-  address: z.string().min(1, "Address is required"),
+export const CreateMeterSchema = z
+  .object({
+    customer_name: z.string().min(1, "Customer name is required"),
+    meter_number: z
+      .string()
+      .regex(/^\d+$/, "Meter number must contain only digits")
+      .min(1, "Meter number is required"),
+    email: z.string().email("Invalid email address"),
+    phone_code: z.string().optional(),
+    phone: z.string().min(1, "Phone number is required"),
+    address: z.string().min(1, "Address is required"),
   sgc: z
     .string()
     .regex(/^\d{6}$/, "SGC must be exactly 6 digits"),
@@ -291,7 +311,19 @@ export const CreateMeterSchema = z.object({
       return num >= 1 && num <= 2;
     }, "Key revision number must be 1 or 2"),
   meter_type: z.enum(["electricity", "water", "gas"]),
-});
+})
+.refine(
+    (data) => {
+      if (data.phone && !data.phone_code) {
+        return false;
+      }
+      return true;
+    },
+    {
+      message: "Country code is required",
+      path: ["phone_code"],
+    }
+  );
 
 export type TCreateMeterSchema = z.infer<typeof CreateMeterSchema>;
 
@@ -301,41 +333,63 @@ export const UpdateMeterSchema = CreateMeterSchema.omit({
 
 export type TUpdateMeterSchema = z.infer<typeof UpdateMeterSchema>;
 
-export const GenerateTokenSchema = z.object({
-  token_type: z.enum([
-    "credit",
-    "kct",
-    "mse",
-    "clear_credit",
-    "clear_tamper",
-    "test",
-    "ditk",
-    "mgtk",
-  ]),
-  meter_number: z.string().min(1, "Meter number is required"),
-  amount: z.coerce.number().min(1).optional(),
-  utility_units: z.coerce.number().min(1).optional(),
-  subclass: z.number().optional(),
-  operation: z.string().optional(),
-  action: z.string().optional(),
-}).superRefine((data, ctx) => {
-  if (data.token_type === 'mgtk') {
-    if (!data.operation) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['operation'],
-        message: 'Operation is required',
-      });
+export const GenerateTokenSchema = z
+  .object({
+    token_type: z.enum([
+      "credit",
+      "kct",
+      "mse",
+      "clear_credit",
+      "clear_tamper",
+      "test",
+      "ditk",
+      "mgtk",
+    ]),
+    meter_number: z.string().min(1, "Meter number is required"),
+    amount: z.coerce.number().optional(),
+    utility_units: z.coerce.number().optional(),
+    subclass: z.number().optional(),
+    operation: z.string().optional(),
+    action: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.token_type === "credit") {
+      const hasAmount = data.amount !== undefined && data.amount >= 1;
+      const hasUnits =
+        data.utility_units !== undefined && data.utility_units >= 1;
+
+      if (!hasAmount && !hasUnits) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["amount"],
+          message: "Either amount (at least 1) or units (at least 1) must be provided.",
+        });
+      }
+      if (hasAmount && hasUnits) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["amount"],
+          message: "Please provide either amount or units, but not both.",
+        });
+      }
     }
-    if (!data.action) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['action'],
-        message: 'Action is required',
-      });
+    if (data.token_type === "mgtk") {
+      if (!data.operation) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["operation"],
+          message: "Operation is required",
+        });
+      }
+      if (!data.action) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["action"],
+          message: "Action is required",
+        });
+      }
     }
-  }
-});
+  });
 
 export type TGenerateTokenSchema = z.infer<typeof GenerateTokenSchema>;
 

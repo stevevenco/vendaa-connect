@@ -64,6 +64,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { PhoneInput } from "@/components/ui/phone-input";
+import countryToPhoneCode from "@/data/country_to_phone_code.json";
 
 export default function MetersPage() {
   const { selectedOrganization } = useOrganizations();
@@ -109,6 +111,7 @@ export default function MetersPage() {
       customer_name: "",
       meter_number: "",
       email: "",
+      phone_code: "",
       phone: "",
       address: "",
       sgc: "",
@@ -117,6 +120,16 @@ export default function MetersPage() {
       meter_type: "electricity",
     },
   });
+
+  useEffect(() => {
+    if (selectedOrganization?.country) {
+      const country = selectedOrganization.country.toLowerCase() as keyof typeof countryToPhoneCode;
+      const code = countryToPhoneCode[country];
+      if (code) {
+        form.setValue("phone_code", code);
+      }
+    }
+  }, [selectedOrganization, form]);
 
   const onSubmit = async (values: TCreateMeterSchema) => {
     if (!selectedOrganization) return;
@@ -492,7 +505,14 @@ export default function MetersPage() {
                         <FormItem>
                           <FormLabel className="text-xs sm:text-sm">Phone</FormLabel>
                           <FormControl>
-                            <Input placeholder="+234-xxx-xxx-xxxx" {...field} className="text-sm" />
+                            <PhoneInput
+                              placeholder="812 345 6789"
+                              {...field}
+                              country={form.watch("phone_code") || ""}
+                              onCountryChange={(code) =>
+                                form.setValue("phone_code", code)
+                              }
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>

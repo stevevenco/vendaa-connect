@@ -74,7 +74,8 @@ export default function VendingPage() {
     defaultValues: {
       token_type: "credit",
       meter_number: "",
-      amount: 0,
+      amount: undefined,
+      utility_units: undefined,
     },
   });
 
@@ -219,9 +220,15 @@ export default function VendingPage() {
               <FormItem>
                 <FormLabel>Purchase Type</FormLabel>
                 <RadioGroup
-                  onValueChange={(value) =>
-                    setPurchaseMethod(value as "amount" | "units")
-                  }
+                  onValueChange={(value) => {
+                    const method = value as "amount" | "units";
+                    setPurchaseMethod(method);
+                    if (method === "amount") {
+                      form.setValue("utility_units", undefined);
+                    } else {
+                      form.setValue("amount", undefined);
+                    }
+                  }}
                   defaultValue={purchaseMethod}
                   className="flex items-center space-x-4"
                 >
@@ -254,6 +261,7 @@ export default function VendingPage() {
                         type="number"
                         placeholder="Enter amount"
                         {...field}
+                        value={field.value ?? ""}
                       />
                     </FormControl>
                     <FormMessage />
@@ -275,6 +283,7 @@ export default function VendingPage() {
                         type="number"
                         placeholder="Enter number of units"
                         {...field}
+                        value={field.value ?? ""}
                       />
                     </FormControl>
                     <FormMessage />
