@@ -9,6 +9,7 @@ import {
   AlertTriangle,
   RotateCw,
   MoreVertical,
+  CheckCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -230,7 +231,9 @@ export default function DeveloperPage() {
                     <div>
                       <p className="font-semibold">{apiKey.name}</p>
                       <p className="font-mono text-sm text-muted-foreground">
-                        {apiKey.key_id}
+                        {apiKey.key_id.length > 15
+                          ? `${apiKey.key_id.substring(0, 15)}...`
+                          : apiKey.key_id}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         Created on{" "}
@@ -268,7 +271,11 @@ export default function DeveloperPage() {
                                 : "text-green-600"
                             }
                           >
-                            <Trash2 className="mr-2 h-4 w-4" />
+                            {apiKey.is_active ? (
+                              <Trash2 className="mr-2 h-4 w-4" />
+                            ) : (
+                              <CheckCircle className="mr-2 h-4 w-4" />
+                            )}
                             {apiKey.is_active ? "Disable" : "Enable"}
                           </DropdownMenuItem>
                         </DropdownMenuContent>

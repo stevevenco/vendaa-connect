@@ -37,6 +37,7 @@ import {
 } from "@/services/api";
 import { useToast } from "@/components/ui/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/context/AuthContext";
 import { useOrganizations } from "@/hooks/useOrganizations";
 import {
   Table,
@@ -55,10 +56,24 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+import { Badge } from "@/components/ui/badge";
+
+const ROLES = [
+  { value: "owner", label: "Owner" },
+  { value: "admin", label: "Admin" },
+  { value: "member", label: "Member" },
+  { value: "auditor", label: "Auditor" },
+  { value: "finance_manager", label: "Finance Manager" },
+  { value: "operations_manager", label: "Operations Manager" },
+  { value: "support_agent", label: "Support Agent" },
+  { value: "developer", label: "Developer" },
+];
+
 export default function OrganizationPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { selectedOrganization } = useOrganizations();
+  const { user: currentUser } = useAuth();
   const [activeTab, setActiveTab] = useState("details");
 
   const [editingMember, setEditingMember] = useState<OrganizationMember | null>(null);
@@ -297,6 +312,9 @@ export default function OrganizationPage() {
                 <div>
                   <p className="font-semibold">
                     {member.user.first_name} {member.user.last_name}
+                    {member.user.email === currentUser?.email && (
+                      <Badge className="ml-2">You</Badge>
+                    )}
                   </p>
                   <p className="text-sm text-muted-foreground">
                     {member.user.email}
@@ -332,9 +350,11 @@ export default function OrganizationPage() {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="admin">Admin</SelectItem>
-                              <SelectItem value="member">Member</SelectItem>
-                              <SelectItem value="owner">Owner</SelectItem>
+                              {ROLES.map((role) => (
+                                <SelectItem key={role.value} value={role.value}>
+                                  {role.label}
+                                </SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                         </FormItem>
@@ -402,9 +422,16 @@ export default function OrganizationPage() {
             {members?.map((member) => (
               <TableRow key={member.uuid}>
                 <TableCell className="font-medium">
-                  {truncateText(
-                    `${member.user.first_name} ${member.user.last_name}`
-                  )}
+                  <div className="flex items-center">
+                    <span>
+                      {truncateText(
+                        `${member.user.first_name} ${member.user.last_name}`
+                      )}
+                    </span>
+                    {member.user.email === currentUser?.email && (
+                      <Badge className="ml-2">You</Badge>
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell>{truncateText(member.user.email)}</TableCell>
                 <TableCell className="capitalize">
@@ -432,11 +459,14 @@ export default function OrganizationPage() {
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                  <SelectItem value="admin">Admin</SelectItem>
-                                  <SelectItem value="member">
-                                    Member
-                                  </SelectItem>
-                                  <SelectItem value="owner">Owner</SelectItem>
+                                  {ROLES.map((role) => (
+                                    <SelectItem
+                                      key={role.value}
+                                      value={role.value}
+                                    >
+                                      {role.label}
+                                    </SelectItem>
+                                  ))}
                                 </SelectContent>
                               </Select>
                             </FormItem>
@@ -755,9 +785,15 @@ export default function OrganizationPage() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="admin" className="text-sm">Admin</SelectItem>
-                            <SelectItem value="member" className="text-sm">Member</SelectItem>
-                            <SelectItem value="owner" className="text-sm">Owner</SelectItem>
+                            {ROLES.map((role) => (
+                              <SelectItem
+                                key={role.value}
+                                value={role.value}
+                                className="text-sm"
+                              >
+                                {role.label}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -902,9 +938,15 @@ export default function OrganizationPage() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="admin" className="text-sm">Admin</SelectItem>
-                            <SelectItem value="member" className="text-sm">Member</SelectItem>
-                            <SelectItem value="owner" className="text-sm">Owner</SelectItem>
+                            {ROLES.map((role) => (
+                              <SelectItem
+                                key={role.value}
+                                value={role.value}
+                                className="text-sm"
+                              >
+                                {role.label}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                         <FormMessage />

@@ -25,6 +25,8 @@ export const OrganizationProvider = ({
   const [isTransactionsLoading, setIsTransactionsLoading] = useState(false);
   const [transactionsTotalPages, setTransactionsTotalPages] = useState(0);
   const [transactionsCount, setTransactionsCount] = useState(0);
+  const [walletActivityTransactions, setWalletActivityTransactions] = useState<Transaction[]>([]);
+  const [isWalletActivityTransactionsLoading, setIsWalletActivityTransactionsLoading] = useState(false);
 
   const fetchWalletBalance = useCallback(async (organizationId: string) => {
     setIsBalanceLoading(true);
@@ -62,6 +64,20 @@ export const OrganizationProvider = ({
       setTransactions([]);
     } finally {
       setIsTransactionsLoading(false);
+    }
+  }, []);
+
+  const fetchWalletActivityTransactions = useCallback(async (organizationId: string, month: number) => {
+    setIsWalletActivityTransactionsLoading(true);
+    try {
+      // Fetch all transactions for the month
+      const transactionsData = await getTransactions(organizationId, 1, 1000, month.toString());
+      setWalletActivityTransactions(transactionsData.results);
+    } catch (error) {
+      console.error("Failed to fetch wallet activity transactions:", error);
+      setWalletActivityTransactions([]);
+    } finally {
+      setIsWalletActivityTransactionsLoading(false);
     }
   }, []);
 
@@ -133,6 +149,9 @@ export const OrganizationProvider = ({
         transactionsCount,
         fetchTransactions,
         isTransactionsLoading,
+        walletActivityTransactions,
+        isWalletActivityTransactionsLoading,
+        fetchWalletActivityTransactions,
       }}
     >
       {children}
