@@ -82,6 +82,7 @@ export interface RegisterResponse {
   email: string;
   first_name: string;
   last_name: string;
+  phone_code: string | null;
   phone_number: string;
   organizations: Organization[];
 }
@@ -146,6 +147,7 @@ export interface User {
   email: string;
   first_name: string;
   last_name: string;
+  phone_code: string | null;
   phone_number: string | null;
   organizations: Organization[];
   is_verified: boolean;
@@ -312,7 +314,7 @@ export const GenerateTokenSchema = z.object({
   ]),
   meter_number: z.string().min(1, "Meter number is required"),
   amount: z.coerce.number().min(1).optional(),
-  utility_units: z.coerce.number().optional(),
+  utility_units: z.coerce.number().min(1).optional(),
   subclass: z.number().optional(),
   operation: z.string().optional(),
   action: z.string().optional(),
