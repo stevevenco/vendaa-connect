@@ -422,12 +422,16 @@ export default function OrganizationPage() {
             {members?.map((member) => (
               <TableRow key={member.uuid}>
                 <TableCell className="font-medium">
-                  {truncateText(
-                    `${member.user.first_name} ${member.user.last_name}`
-                  )}
-                  {member.user.email === currentUser?.email && (
-                    <Badge className="ml-2">You</Badge>
-                  )}
+                  <div className="flex items-center">
+                    <span>
+                      {truncateText(
+                        `${member.user.first_name} ${member.user.last_name}`
+                      )}
+                    </span>
+                    {member.user.email === currentUser?.email && (
+                      <Badge className="ml-2">You</Badge>
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell>{truncateText(member.user.email)}</TableCell>
                 <TableCell className="capitalize">

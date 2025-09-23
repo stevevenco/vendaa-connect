@@ -282,17 +282,16 @@ export interface Meter {
   last_updated: string;
 }
 
-export const CreateMeterSchema = z
-  .object({
-    customer_name: z.string().min(1, "Customer name is required"),
-    meter_number: z
-      .string()
-      .regex(/^\d+$/, "Meter number must contain only digits")
-      .min(1, "Meter number is required"),
-    email: z.string().email("Invalid email address"),
-    phone_code: z.string().optional(),
-    phone: z.string().min(1, "Phone number is required"),
-    address: z.string().min(1, "Address is required"),
+const BaseCreateMeterSchema = z.object({
+  customer_name: z.string().min(1, "Customer name is required"),
+  meter_number: z
+    .string()
+    .regex(/^\d+$/, "Meter number must contain only digits")
+    .min(1, "Meter number is required"),
+  email: z.string().email("Invalid email address"),
+  phone_code: z.string().optional(),
+  phone: z.string().min(1, "Phone number is required"),
+  address: z.string().min(1, "Address is required"),
   sgc: z
     .string()
     .regex(/^\d{6}$/, "SGC must be exactly 6 digits"),
@@ -311,23 +310,24 @@ export const CreateMeterSchema = z
       return num >= 1 && num <= 2;
     }, "Key revision number must be 1 or 2"),
   meter_type: z.enum(["electricity", "water", "gas"]),
-})
-.refine(
-    (data) => {
-      if (data.phone && !data.phone_code) {
-        return false;
-      }
-      return true;
-    },
-    {
-      message: "Country code is required",
-      path: ["phone_code"],
+});
+
+export const CreateMeterSchema = BaseCreateMeterSchema.refine(
+  (data) => {
+    if (data.phone && !data.phone_code) {
+      return false;
     }
-  );
+    return true;
+  },
+  {
+    message: "Country code is required",
+    path: ["phone_code"],
+  }
+);
 
 export type TCreateMeterSchema = z.infer<typeof CreateMeterSchema>;
 
-export const UpdateMeterSchema = CreateMeterSchema.omit({
+export const UpdateMeterSchema = BaseCreateMeterSchema.omit({
   meter_number: true,
 }).partial();
 

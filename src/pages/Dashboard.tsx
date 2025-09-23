@@ -45,20 +45,26 @@ export default function Dashboard() {
     selectedOrganization,
     fetchWalletBalance,
     isBalanceLoading,
-    transactions,
+    walletActivityTransactions,
+    isWalletActivityTransactionsLoading,
+    fetchWalletActivityTransactions,
   } = useOrganizations();
   const { openModal } = useTopUp();
   const { data: dashboardData, isLoading: isDashboardLoading } = useDashboardData();
 
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth() + 1);
-  const [walletActivityData, setWalletActivityData] = useState<any[]>([]);
 
   useEffect(() => {
-    const year = new Date().getFullYear();
-    if (transactions) {
-      setWalletActivityData(processTransactionsForChart(transactions, currentMonth, year));
+    if (selectedOrganization) {
+      fetchWalletActivityTransactions(selectedOrganization.uuid, currentMonth);
     }
-  }, [currentMonth, transactions]);
+  }, [selectedOrganization, currentMonth, fetchWalletActivityTransactions]);
+
+  const walletActivityData = processTransactionsForChart(
+    walletActivityTransactions,
+    currentMonth,
+    new Date().getFullYear()
+  );
 
   const year = new Date().getFullYear();
   const daysInMonth = new Date(year, currentMonth, 0).getDate();
@@ -255,23 +261,29 @@ export default function Dashboard() {
           </Select>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={walletActivityData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="day" tick={{ fontSize: 12 }} ticks={ticks.map(String)} />
-              <YAxis tick={{ fontSize: 12 }} />
-              <Tooltip
-                formatter={(value: number) => [`₦${value.toLocaleString()}`, 'Amount']}
-              />
-              <Line
-                type="monotone"
-                dataKey="amount"
-                stroke="hsl(var(--primary))"
-                strokeWidth={3}
-                dot={{ fill: "hsl(var(--primary))", strokeWidth: 2, r: 4 }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
+          {isWalletActivityTransactionsLoading ? (
+            <div className="h-[200px] w-full flex items-center justify-center">
+              <Skeleton className="h-full w-full" />
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={200}>
+              <LineChart data={walletActivityData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="day" tick={{ fontSize: 12 }} ticks={ticks.map(String)} />
+                <YAxis tick={{ fontSize: 12 }} />
+                <Tooltip
+                  formatter={(value: number) => [`₦${value.toLocaleString()}`, 'Amount']}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="amount"
+                  stroke="hsl(var(--primary))"
+                  strokeWidth={3}
+                  dot={{ fill: "hsl(var(--primary))", strokeWidth: 2, r: 4 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
         </CardContent>
       </Card>
     </div>

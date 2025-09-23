@@ -209,7 +209,7 @@ export const TopUpModal = () => {
                 />
                 <p className="text-xs text-muted-foreground">
                   Minimum top-up amount is ₦1,000
-                </.p>
+                </p>
               </div>
 
               <div className="grid gap-3">
