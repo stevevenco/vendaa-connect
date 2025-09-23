@@ -32,16 +32,23 @@ import {
 import { createOrganization } from "@/services/api";
 import { useToast } from "@/components/ui/use-toast";
 import { useEffect, useState } from "react";
-import countriesData from "../../countries.json";
+// import countriesData from "../../countries.json";
+// import countriesData from "@/data/countries_staging.json"
+// import countriesData from "../../countries.json";
+import { COUNTRY_DATA } from "@/services/api"
+import { useAuth } from "@/context/AuthContext";
 
 interface Country {
   name: string;
   uuid: string;
 }
 
+const countriesData = COUNTRY_DATA();
+
 export default function CreateOrganizationPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { checkAuth } = useAuth();
   const [countries, setCountries] = useState<Country[]>([]);
 
   useEffect(() => {
@@ -69,8 +76,7 @@ export default function CreateOrganizationPage() {
         title: "Organization Created",
         description: "Your organization has been created successfully.",
       });
-      // In a real app, you might want to refresh the user's data
-      // to get the new organization details and then navigate.
+      await checkAuth();
       navigate("/");
     } catch (error) {
       toast({

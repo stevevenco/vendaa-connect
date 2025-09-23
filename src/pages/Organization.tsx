@@ -37,7 +37,6 @@ import {
 } from "@/services/api";
 import { useToast } from "@/components/ui/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import countriesData from "../../countries.json";
 import { useOrganizations } from "@/hooks/useOrganizations";
 import {
   Table,
@@ -64,11 +63,7 @@ export default function OrganizationPage() {
 
   const [editingMember, setEditingMember] = useState<OrganizationMember | null>(null);
 
-  const countryName =
-    selectedOrganization?.country &&
-    Object.keys(countriesData).find(
-      (key) => (countriesData as any)[key] === selectedOrganization.country
-    );
+  const countryName = selectedOrganization?.country;
 
   const organizationForm = useForm<TUpdateOrganizationSchema>({
     resolver: zodResolver(UpdateOrganizationSchema),
@@ -471,23 +466,25 @@ export default function OrganizationPage() {
                 <TableCell>
                   {new Date(member.joined_at).toLocaleDateString()}
                 </TableCell>
-                <TableCell className="text-right space-x-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setEditingMember(member)}
-                    disabled={editingMember?.uuid === member.uuid}
-                  >
-                    Edit Role
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    onClick={() => removeMemberMutation.mutate(member.uuid)}
-                    disabled={removeMemberMutation.isPending}
-                  >
-                    Remove
-                  </Button>
+                <TableCell className="text-right">
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setEditingMember(member)}
+                      disabled={editingMember?.uuid === member.uuid}
+                    >
+                      Edit Role
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => removeMemberMutation.mutate(member.uuid)}
+                      disabled={removeMemberMutation.isPending}
+                    >
+                      Remove
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
@@ -813,22 +810,22 @@ export default function OrganizationPage() {
                       </FormItem>
                     )}
                   />
-                  {/* <div className="space-y-2">
+                  <div className="space-y-2">
                     <Label className="text-xs sm:text-sm">Country</Label>
                     <Input
                       readOnly
                       value={countryName ? countryName.charAt(0).toUpperCase() + countryName.slice(1) : ""}
                       className="text-sm bg-gray-100 dark:bg-gray-800"
                     />
-                  </div> */}
-                  {/* <div className="space-y-2">
+                  </div>
+                  <div className="space-y-2">
                     <Label className="text-xs sm:text-sm">Currency</Label>
                     <Input
                       readOnly
                       value={selectedOrganization?.currency || ""}
                       className="text-sm bg-gray-100 dark:bg-gray-800"
                     />
-                  </div> */}
+                  </div>
                   <Button
                     type="submit"
                     disabled={updateOrganizationMutation.isPending}

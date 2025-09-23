@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -31,6 +31,13 @@ import {
   TableRow
 } from "@/components/ui/table";
 import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import {
   Gauge,
   Plus,
   Search,
@@ -45,7 +52,7 @@ import {
 } from "lucide-react";
 import { useOrganizations } from "@/hooks/useOrganizations";
 import { getMeters, createMeter, deleteMeter, ApiError } from "@/services/api";
-import { Meter, CreateMeterSchema, TCreateMeterSchema } from "@/types";
+import { Meter, CreateMeterSchema, TCreateMeterSchema, PaginatedResponse } from "@/types";
 import { useToast } from "@/components/ui/use-toast";
 import {
   AlertDialog,
@@ -62,22 +69,26 @@ export default function MetersPage() {
   const { selectedOrganization } = useOrganizations();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
-  const [meters, setMeters] = useState<Meter[]>([]);
+  const [metersResponse, setMetersResponse] = useState<PaginatedResponse<Meter> | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState("list");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
 
   const [meterToDelete, setMeterToDelete] = useState<Meter | null>(null);
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
 
-  const fetchMeters = useCallback(async () => {
+  const fetchMeters = useCallback(async (page = 1, size = 10) => {
     if (!selectedOrganization) return;
     setIsLoading(true);
     setError(null);
     try {
-      const data = await getMeters(selectedOrganization.uuid);
-      setMeters(data);
+      const data = await getMeters(selectedOrganization.uuid, page, size);
+      setMetersResponse(data);
+      setCurrentPage(page);
     } catch (err) {
       setError("Failed to fetch meters.");
       console.error(err);
@@ -87,8 +98,10 @@ export default function MetersPage() {
   }, [selectedOrganization]);
 
   useEffect(() => {
-    fetchMeters();
-  }, [fetchMeters]);
+    if (selectedOrganization) {
+      fetchMeters(currentPage, pageSize);
+    }
+  }, [selectedOrganization, currentPage, pageSize, fetchMeters]);
 
   const form = useForm<TCreateMeterSchema>({
     resolver: zodResolver(CreateMeterSchema),
@@ -115,7 +128,7 @@ export default function MetersPage() {
         description: "Meter created successfully.",
       });
       form.reset();
-      fetchMeters(); // Refresh the list
+      fetchMeters(1, pageSize); // Refresh the list to the first page
       setActiveTab("list");
     } catch (err) {
       if (err instanceof ApiError) {
@@ -144,7 +157,8 @@ export default function MetersPage() {
         title: "Success",
         description: "Meter deleted successfully.",
       });
-      fetchMeters(); // Refresh the list
+      // Refresh the current page
+      fetchMeters(currentPage, pageSize);
     } catch (err) {
       toast({
         variant: "destructive",
@@ -161,6 +175,8 @@ export default function MetersPage() {
     setMeterToDelete(meter);
     setIsDeleteAlertOpen(true);
   };
+
+  const meters = metersResponse?.results || [];
 
   const filteredMeters = meters.filter(meter =>
     meter.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -180,6 +196,11 @@ export default function MetersPage() {
   const truncateText = (text: string, maxLength: number = 20) => {
     return text.length > maxLength ? `${text.substring(0, maxLength)}...` : text;
   };
+  
+  const handlePageChange = (page: number) => {
+    fetchMeters(page, pageSize);
+  };
+
 
   return (
     <div className="space-y-6 p-4">
@@ -209,7 +230,7 @@ export default function MetersPage() {
             <Gauge className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-lg sm:text-2xl font-bold">{isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : meters.length}</div>
+            <div className="text-lg sm:text-2xl font-bold">{isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : metersResponse?.count ?? 0}</div>
             <p className="text-xs text-muted-foreground">
               Across all utility types
             </p>
@@ -281,6 +302,9 @@ export default function MetersPage() {
                   className="max-w-sm text-sm"
                 />
               </div>
+              <CardDescription className="text-xs sm:text-sm pt-2">
+                The search will be applied to the current page only.
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <Table>
@@ -369,6 +393,43 @@ export default function MetersPage() {
                   )}
                 </TableBody>
               </Table>
+              {metersResponse && metersResponse.total_pages > 1 ? (
+                <CardFooter className="flex justify-center pt-4">
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious
+                          href="#"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            handlePageChange(currentPage - 1);
+                          }}
+                          className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
+                        />
+                      </PaginationItem>
+                      <PaginationItem>
+                        <span className="text-sm font-medium">
+                          Page {currentPage} of {metersResponse.total_pages}
+                        </span>
+                      </PaginationItem>
+                      <PaginationItem>
+                        <PaginationNext
+                          href="#"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            handlePageChange(currentPage + 1);
+                          }}
+                          className={currentPage === metersResponse.total_pages ? "pointer-events-none opacity-50" : ""}
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                </CardFooter>
+              ) : (
+                <div className="text-center text-sm text-muted-foreground pt-4">
+                  {metersResponse ? `Only one page available (Total pages: ${metersResponse.total_pages})` : "No meters data loaded"}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -457,12 +518,25 @@ export default function MetersPage() {
                         <FormItem>
                           <FormLabel className="text-xs sm:text-sm">SGC</FormLabel>
                           <FormControl>
-                            <Input placeholder="Enter SGC" {...field} className="text-sm" />
+                            <Input
+                              type="text"
+                              inputMode="numeric" // mobile numeric keypad
+                              pattern="\d*"
+                              placeholder="6-digit SGC e.g. 123456"
+                              {...field}
+                              className="text-sm"
+                              onChange={(e) => {
+                                // Only allow digits
+                                const val = e.target.value.replace(/\D/g, "");
+                                field.onChange(val);
+                              }}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
+
                     <FormField
                       control={form.control}
                       name="tariff_index"
@@ -470,12 +544,24 @@ export default function MetersPage() {
                         <FormItem>
                           <FormLabel className="text-xs sm:text-sm">Tariff Index</FormLabel>
                           <FormControl>
-                            <Input placeholder="T1, T2, etc." {...field} className="text-sm" />
+                            <Input
+                              type="text"
+                              inputMode="numeric"
+                              pattern="\d*"
+                              placeholder="Enter tariff index (1–99)"
+                              {...field}
+                              className="text-sm"
+                              onChange={(e) => {
+                                const val = e.target.value.replace(/\D/g, "");
+                                field.onChange(val);
+                              }}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
+
                     <FormField
                       control={form.control}
                       name="key_revision_number"
@@ -483,12 +569,24 @@ export default function MetersPage() {
                         <FormItem>
                           <FormLabel className="text-xs sm:text-sm">Key Revision Number</FormLabel>
                           <FormControl>
-                            <Input placeholder="001, 002, etc." {...field} className="text-sm" />
+                            <Input
+                              type="text"
+                              inputMode="numeric"
+                              pattern="\d*"
+                              placeholder="Enter 1 or 2"
+                              {...field}
+                              className="text-sm"
+                              onChange={(e) => {
+                                const val = e.target.value.replace(/\D/g, "");
+                                field.onChange(val);
+                              }}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
+
                     <FormField
                       control={form.control}
                       name="meter_type"

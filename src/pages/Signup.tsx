@@ -21,10 +21,13 @@ import { Input } from "@/components/ui/input";
 import { TRegisterSchema, RegisterSchema } from "@/types";
 import { register } from "@/services/api";
 import { useToast } from "@/components/ui/use-toast";
+import { PhoneInput } from "@/components/ui/phone-input";
+import { useState } from "react";
 
 export default function SignupPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [phoneCode, setPhoneCode] = useState("");
   const form = useForm<TRegisterSchema>({
     resolver: zodResolver(RegisterSchema),
     defaultValues: {
@@ -33,13 +36,17 @@ export default function SignupPage() {
       confirmPassword: "",
       first_name: "",
       last_name: "",
+      phone_code: "",
       phone_number: "",
     },
   });
 
   const onSubmit = async (data: TRegisterSchema) => {
     try {
-      await register(data);
+      await register({
+        ...data,
+        phone_number: data.phone_code + data.phone_number,
+      });
       toast({
         title: "Account Created",
         description: "An OTP has been sent to your email for verification.",
@@ -94,20 +101,29 @@ export default function SignupPage() {
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name="phone_number"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Phone Number (Optional)</FormLabel>
-                      <FormControl>
-                        <Input placeholder="+1234567890" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
               </div>
+              {/* Phone number field moved outside the grid or made to span 2 columns */}
+              <FormField
+                control={form.control}
+                name="phone_number"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone Number (Optional)</FormLabel>
+                    <FormControl>
+                      <PhoneInput
+                        {...field}
+                        placeholder="812 345 6789"
+                        country={phoneCode}
+                        onCountryChange={(code) => {
+                          setPhoneCode(code);
+                          form.setValue("phone_code", code);
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <FormField
                 control={form.control}
                 name="email"

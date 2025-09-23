@@ -1,0 +1,11 @@
+{
+  "Set Flag CTS Test": ["Set", "Reset"],
+  "Detect Tamper": ["Enable", "Disable"],
+  "Disconnect Service": ["Enable Reconnection of Service", "Disconnect Service"],
+  "Disconnect On Tamper": ["Enable", "Disable"],
+  "Disconnect On Power Limit": ["Enable", "Disable"],
+  "Disconnect On Under Frequency": ["Enable", "Disable"],
+  "Set Electricity Payment Mode": ["Post Payment", "Pre-Payment"],
+  "Set Commissioning Mode": ["Set", "Unset"],
+  "Enable TI Fallback Power Limit": ["Enable", "Disable"]
+}

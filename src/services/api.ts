@@ -25,7 +25,11 @@ import {
   Transaction,
   TCreateApiKeySchema,
   UtilityCost,
+  PaginatedResponse,
 } from "@/types";
+import { UtilityVend } from "@/types/dashboard";
+import stagingCountriesData from "@/data/countries_staging.json"
+import localCountriesData from "@/data/countries.json"
 
 const LOCAL_API_URL: string = import.meta.env.VITE_LOCAL_API_URL || "http://localhost:8000";
 const STAGING_API_URL: string = import.meta.env.VITE_STAGING_API_URL || "https://vendaa-be.onrender.com";
@@ -35,6 +39,18 @@ const API_VERSION: string = import.meta.env.VITE_API_VERSION || "api/v1";
 const env: string = import.meta.env.VITE_ENV || "development";
 
 let API_URL: string = "";
+// export const COUNTRY_DATA;
+
+export const COUNTRY_DATA = () => {
+  if (env === "development") {
+    return localCountriesData;
+  } else if (env === "staging") {
+    return stagingCountriesData;
+  } else {
+    return localCountriesData;
+  }
+};
+
 if (env === "development") {
   API_URL = LOCAL_API_URL;
 } else if (env === "staging") {
@@ -309,13 +325,21 @@ export const initiateWalletFunding = (
   );
 };
 
-export const getTransactions = (organizationId: string): Promise<Transaction[]> => {
-  return authApi<Transaction[]>(`/wallet/transactions/${organizationId}/`);
+export const getTransactions = (organizationId: string, page: number = 1, pageSize: number = 10, month: string | null = null): Promise<PaginatedResponse<Transaction>> => {
+  let url = `/wallet/transactions/${organizationId}/?page=${page}&page_size=${pageSize}`;
+  if (month && month !== "all") {
+    url += `&month=${month}`;
+  }
+  return authApi<PaginatedResponse<Transaction>>(url);
+};
+
+export const getUtilityVends = (orgId: string): Promise<UtilityVend[]> => {
+  return authApi<UtilityVend[]>(`/organizations/${orgId}/utility-vends/`);
 };
 
 // Meter Related Endpoints
-export const getMeters = (orgId: string): Promise<Meter[]> => {
-  return authApi<Meter[]>(`/organizations/${orgId}/meters/`);
+export const getMeters = (orgId: string, page: number = 1, pageSize: number = 10): Promise<PaginatedResponse<Meter>> => {
+  return authApi<PaginatedResponse<Meter>>(`/organizations/${orgId}/meters/?page=${page}&page_size=${pageSize}`);
 };
 
 export const createMeter = (
@@ -427,4 +451,18 @@ export const generateToken = (
     },
     body: JSON.stringify(data),
   });
+};
+
+export const switchDisplayState = (
+  display_state: "live" | "test",
+  organization: string
+): Promise<void> => {
+  return authApi<void>(
+    `/auth/switch-state/`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ display_state, organization }),
+    },
+    false
+  );
 };

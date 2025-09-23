@@ -217,7 +217,7 @@ export default function DeveloperPage() {
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <p>Loading...</p>
+              <p>Thinking...</p>
             ) : isError ? (
               <p className="text-destructive">Failed to load API keys.</p>
             ) : apiKeys && apiKeys.length > 0 ? (

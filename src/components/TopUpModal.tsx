@@ -187,7 +187,7 @@ export const TopUpModal = () => {
               disabled={isFetching || !amount || !paymentMethod}
               className="w-full bg-gradient-to-r from-primary to-primary-glow"
             >
-              {isFetching ? "Loading..." : "Proceed to Payment"}
+              {isFetching ? "Thinking..." : "Proceed to Payment"}
             </Button>
           )}
           <Button variant="outline" onClick={handleClose}>

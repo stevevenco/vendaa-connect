@@ -1,16 +1,23 @@
-import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Wallet, Plus, ArrowUpDown, History, RefreshCw } from "lucide-react";
 import { useOrganizations } from "@/hooks/useOrganizations";
 import { useTopUp } from "@/hooks/useTopUp";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function WalletPage() {
   const [selectedMonth, setSelectedMonth] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
   const {
     walletBalance,
     isLoading,
@@ -18,16 +25,24 @@ export default function WalletPage() {
     fetchWalletBalance,
     isBalanceLoading,
     transactions,
+    transactionsTotalPages,
     isTransactionsLoading,
     fetchTransactions,
   } = useOrganizations();
   const { openModal } = useTopUp();
 
-  const filteredTransactions = transactions.filter(tx => {
-    if (selectedMonth === "all") return true;
-    const txDate = new Date(tx.created_at);
-    return txDate.getMonth() + 1 === parseInt(selectedMonth);
-  });
+  useEffect(() => {
+    if (selectedOrganization) {
+      fetchTransactions(selectedOrganization.uuid, currentPage, selectedMonth);
+    }
+  }, [selectedOrganization, currentPage, selectedMonth, fetchTransactions]);
+
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const filteredTransactions = transactions;
 
   // Function to truncate text longer than 20 characters
   const truncateText = (text: string, maxLength: number = 20) => {
@@ -43,10 +58,17 @@ export default function WalletPage() {
             Manage your organization's wallet and transaction history.
           </p>
         </div>
+        <Button
+          onClick={openModal}
+          className="bg-gradient-to-r from-primary to-primary-glow text-sm"
+        >
+          <Plus className="mr-2 h-4 w-4" />
+          Top Up Wallet
+        </Button>
       </div>
 
-      <div className="w-full">
-        <Card className="w-full min-w-[160px] snap-start md:min-w-0 bg-gradient-to-br from-primary to-primary-glow text-primary-foreground">
+      <div className="w-full md:w-80">
+        <Card className="w-full bg-gradient-to-br from-primary to-primary-glow text-primary-foreground">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-xs sm:text-sm flex items-center gap-2">
               <Wallet className="h-4 w-4" />
@@ -66,7 +88,7 @@ export default function WalletPage() {
             {isLoading ? (
               <Skeleton className="h-8 w-3/4" />
             ) : (
-              <div className="text-lg sm:text-2xl font-bold">
+              <div className="text-lg mt-1 font-bold">
                 {walletBalance ?? "₦0.00"}
               </div>
             )}
@@ -77,37 +99,9 @@ export default function WalletPage() {
         </Card>
       </div>
 
-      <Tabs defaultValue="topup" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="topup" className="text-sm sm:text-base">Top Up Wallet</TabsTrigger>
-          <TabsTrigger value="history" className="text-sm sm:text-base">Transaction History</TabsTrigger>
-        </TabsList>
 
-        <TabsContent value="topup" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-                <Plus className="h-4 w-4" />
-                Add Funds to Wallet
-              </CardTitle>
-              <CardDescription className="text-xs sm:text-sm">
-                Click the button below to add funds to your wallet.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button
-                onClick={openModal}
-                className="w-full bg-gradient-to-r from-primary to-primary-glow text-sm"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Top Up Wallet
-              </Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="history" className="space-y-4">
-          <Card>
+      <div className="space-y-4">
+        <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
@@ -137,7 +131,7 @@ export default function WalletPage() {
                     variant="outline"
                     size="icon"
                     className="h-8 w-8"
-                    onClick={() => selectedOrganization && fetchTransactions(selectedOrganization.uuid)}
+                    onClick={() => selectedOrganization && fetchTransactions(selectedOrganization.uuid, currentPage, selectedMonth)}
                     disabled={isTransactionsLoading}
                   >
                     <RefreshCw className={`h-4 w-4 ${isTransactionsLoading ? 'animate-spin' : ''}`} />
@@ -203,9 +197,41 @@ export default function WalletPage() {
                 </div>
               )}
             </CardContent>
+            {transactionsTotalPages > 1 && (
+              <CardFooter className="flex justify-center pt-4">
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handlePageChange(currentPage - 1);
+                        }}
+                        className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
+                      />
+                    </PaginationItem>
+                    <PaginationItem>
+                      <span className="text-sm font-medium">
+                        Page {currentPage} of {transactionsTotalPages}
+                      </span>
+                    </PaginationItem>
+                    <PaginationItem>
+                      <PaginationNext
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handlePageChange(currentPage + 1);
+                        }}
+                        className={currentPage === transactionsTotalPages ? "pointer-events-none opacity-50" : ""}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </CardFooter>
+            )}
           </Card>
-        </TabsContent>
-      </Tabs>
+      </div>
     </div>
   );
 }

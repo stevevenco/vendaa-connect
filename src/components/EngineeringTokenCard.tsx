@@ -15,6 +15,7 @@ import { Meter, Organization, TokenResponse, CreditTokenResponse, KctTokenRespon
 import { generateToken, ApiError } from "@/services/api";
 import { useToast } from "./ui/use-toast";
 import TokenDisplayDialog from "./TokenDisplayDialog";
+import MeterSearch from "./MeterSearch";
 
 const operationTypes = [
   { value: "kct", label: "Key Change Token (KCT)", icon: Key },
@@ -118,20 +119,13 @@ export default function EngineeringTokenCard({ meters }: EngineeringTokenCardPro
             <>
               <div className="space-y-2">
                 <Label>Select Meter</Label>
-                <Select value={selectedMeter} onValueChange={setSelectedMeter} disabled={meters.length === 0}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select meter" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {meters.map((meter) => (
-                      <SelectItem key={meter.uuid} value={meter.meter_number}>
-                        {meter.meter_number} - {meter.customer_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <MeterSearch
+                  meters={meters}
+                  selectedMeter={selectedMeter}
+                  onSelect={setSelectedMeter}
+                  loading={meters.length === 0}
+                />
               </div>
-
               {selectedMeter && (
                 <div className="pt-4">
                   <Button 
