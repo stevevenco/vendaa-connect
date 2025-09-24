@@ -1,10 +1,5 @@
-import {
-  useState,
-  useEffect,
-  createContext,
-  useContext,
-  useCallback,
-} from "react";
+import { createContext, useContext, useCallback } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getMe } from "@/services/api";
 import { User } from "@/types";
 
@@ -15,67 +10,63 @@ interface AuthContextType {
   isLoading: boolean;
   login: (accessToken: string, refreshToken: string) => void;
   logout: () => void;
-  checkAuth: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [isVerified, setIsVerified] = useState<boolean>(false);
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  const checkAuth = useCallback(async () => {
-    setIsLoading(true);
-    const accessToken = localStorage.getItem("access");
-    if (accessToken) {
-      try {
-        const userData = await getMe();
-        setUser(userData);
-        setIsAuthenticated(true);
-        setIsVerified(userData.is_verified);
-      } catch (error) {
-        // Token might be invalid/expired
-        logout();
+  const {
+    data: user,
+    isLoading,
+    isError,
+  } = useQuery<User | null>({
+    queryKey: ["user"],
+    queryFn: async () => {
+      const accessToken = localStorage.getItem("access");
+      if (accessToken) {
+        try {
+          return await getMe();
+        } catch (error) {
+          // Token might be invalid/expired, treat as logged out
+          return null;
+        }
       }
-    } else {
-      setIsAuthenticated(false);
-      setIsVerified(false);
-      setUser(null);
-    }
-    setIsLoading(false);
-  }, []);
+      return null;
+    },
+    retry: 1, // Retry once on failure
+    refetchOnWindowFocus: true, // Refetch on window focus
+  });
 
-  useEffect(() => {
-    checkAuth();
-  }, [checkAuth]);
+  const isAuthenticated = !!user && !isError;
+  const isVerified = user?.is_verified ?? false;
 
-  const login = (accessToken: string, refreshToken: string) => {
-    localStorage.setItem("access", accessToken);
-    localStorage.setItem("refresh", refreshToken);
-    checkAuth();
-  };
+  const login = useCallback(
+    (accessToken: string, refreshToken: string) => {
+      localStorage.setItem("access", accessToken);
+      localStorage.setItem("refresh", refreshToken);
+      queryClient.invalidateQueries({ queryKey: ["user"] });
+    },
+    [queryClient]
+  );
 
-  const logout = () => {
+  const logout = useCallback(() => {
     localStorage.removeItem("access");
     localStorage.removeItem("refresh");
-    setIsAuthenticated(false);
-    setIsVerified(false);
-    setUser(null);
-    // Redirect happens in the component to allow for more control
-  };
+    queryClient.setQueryData(["user"], null); // Immediately update the user state to null
+    queryClient.invalidateQueries({ queryKey: ["user"] });
+  }, [queryClient]);
 
   return (
     <AuthContext.Provider
       value={{
         isAuthenticated,
         isVerified,
-        user,
+        user: user || null,
         isLoading,
         login,
         logout,
-        checkAuth,
       }}
     >
       {children}

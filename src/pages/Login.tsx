@@ -28,7 +28,6 @@ export default function LoginPage() {
   const location = useLocation();
   const { toast } = useToast();
   const { login } = useAuth();
-  const from = location.state?.from?.pathname || "/";
 
   const form = useForm<TLoginSchema>({
     resolver: zodResolver(LoginSchema),
@@ -46,7 +45,13 @@ export default function LoginPage() {
         title: "Login Successful",
         description: "You have successfully logged in.",
       });
-      navigate(from, { replace: true });
+      const searchParams = new URLSearchParams(location.search);
+      const redirect = searchParams.get("redirect");
+      if (redirect) {
+        navigate(redirect, { replace: true });
+      } else {
+        navigate("/", { replace: true });
+      }
     } catch (error) {
       toast({
         title: "Login Failed",

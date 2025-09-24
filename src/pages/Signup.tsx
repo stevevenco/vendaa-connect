@@ -6,7 +6,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -26,6 +26,7 @@ import { useState } from "react";
 
 export default function SignupPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const [phoneCode, setPhoneCode] = useState("");
   const form = useForm<TRegisterSchema>({
@@ -51,7 +52,11 @@ export default function SignupPage() {
         title: "Account Created",
         description: "An OTP has been sent to your email for verification.",
       });
-      navigate("/verify-otp", { state: { email: data.email } });
+      const searchParams = new URLSearchParams(location.search);
+      const redirect = searchParams.get("redirect");
+      navigate("/verify-otp", {
+        state: { email: data.email, redirect: redirect },
+      });
     } catch (error) {
       toast({
         title: "Registration Failed",

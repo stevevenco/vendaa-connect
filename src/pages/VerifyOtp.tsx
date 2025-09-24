@@ -52,7 +52,12 @@ export default function VerifyOtpPage() {
         title: "OTP Verification Successful",
         description: "Your email has been verified. Please login to continue.",
       });
-      navigate("/login");
+      const redirect = location.state?.redirect;
+      if (redirect) {
+        navigate(`/login?redirect=${redirect}`);
+      } else {
+        navigate("/login");
+      }
     } catch (error) {
       toast({
         title: "Verification Failed",
