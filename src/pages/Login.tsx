@@ -40,7 +40,7 @@ export default function LoginPage() {
   const onSubmit = async (data: TLoginSchema) => {
     try {
       const res = await apiLogin(data);
-      login(res.access, res.refresh);
+      await login(res.access, res.refresh);
       toast({
         title: "Login Successful",
         description: "You have successfully logged in.",

@@ -28,7 +28,8 @@ export default function SignupPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-  const [phoneCode, setPhoneCode] = useState("");
+  const [country, setCountry] = useState({ name: "", code: "" });
+
   const form = useForm<TRegisterSchema>({
     resolver: zodResolver(RegisterSchema),
     defaultValues: {
@@ -44,10 +45,7 @@ export default function SignupPage() {
 
   const onSubmit = async (data: TRegisterSchema) => {
     try {
-      await register({
-        ...data,
-        phone_number: data.phone_code + data.phone_number,
-      });
+      await register(data);
       toast({
         title: "Account Created",
         description: "An OTP has been sent to your email for verification.",
@@ -107,7 +105,6 @@ export default function SignupPage() {
                   )}
                 />
               </div>
-              {/* Phone number field moved outside the grid or made to span 2 columns */}
               <FormField
                 control={form.control}
                 name="phone_number"
@@ -118,10 +115,11 @@ export default function SignupPage() {
                       <PhoneInput
                         {...field}
                         placeholder="812 345 6789"
-                        country={phoneCode}
-                        onCountryChange={(code) => {
-                          setPhoneCode(code);
-                          form.setValue("phone_code", code);
+                        countryName={country.name}
+                        countryCode={country.code}
+                        onCountryChange={(selectedCountry) => {
+                          setCountry(selectedCountry);
+                          form.setValue("phone_code", selectedCountry.code);
                         }}
                       />
                     </FormControl>

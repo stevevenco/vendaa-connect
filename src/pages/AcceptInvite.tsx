@@ -42,12 +42,12 @@ export default function AcceptInvitePage() {
 
   const acceptInvitationMutation = useMutation({
     mutationFn: () => acceptInvitation(token!),
-    onSuccess: () => {
+    onSuccess: async () => {
       toast({
         title: "Invitation Accepted",
         description: `You have successfully joined ${invitation?.organization_name}.`,
       });
-      queryClient.invalidateQueries({ queryKey: ["user"] });
+      await queryClient.invalidateQueries({ queryKey: ["user"] });
       navigate("/"); // Navigate to the dashboard
     },
     onError: (error: Error) => {

@@ -19,12 +19,18 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   TCreateOrganizationSchema,
   CreateOrganizationSchema,
@@ -32,29 +38,30 @@ import {
 import { createOrganization } from "@/services/api";
 import { useToast } from "@/components/ui/use-toast";
 import { useEffect, useState } from "react";
-// import countriesData from "../../countries.json";
-// import countriesData from "@/data/countries_staging.json"
-// import countriesData from "../../countries.json";
-import { COUNTRY_DATA } from "@/services/api"
-import { useAuth } from "@/context/AuthContext";
+import countriesData from "@/data/countries.json";
+import { Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface Country {
   name: string;
   uuid: string;
 }
 
-const countriesData = COUNTRY_DATA();
-
 export default function CreateOrganizationPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { checkAuth } = useAuth();
+  const queryClient = useQueryClient();
   const [countries, setCountries] = useState<Country[]>([]);
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     const loadedCountries = Object.entries(countriesData).map(
       ([name, uuid]) => ({
-        name: name.charAt(0).toUpperCase() + name.slice(1), // Capitalize first letter
+        name: name
+          .split(" ")
+          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(" "),
         uuid,
       })
     );
@@ -76,7 +83,7 @@ export default function CreateOrganizationPage() {
         title: "Organization Created",
         description: "Your organization has been created successfully.",
       });
-      await checkAuth();
+      await queryClient.invalidateQueries({ queryKey: ["user"] });
       navigate("/");
     } catch (error) {
       toast({
@@ -117,22 +124,59 @@ export default function CreateOrganizationPage() {
                 control={form.control}
                 name="country"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="flex flex-col">
                     <FormLabel>Country</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a country" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {countries.map((country) => (
-                          <SelectItem key={country.uuid} value={country.uuid}>
-                            {country.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Popover open={open} onOpenChange={setOpen}>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            className={cn(
+                              "w-full justify-between",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value
+                              ? countries.find(
+                                  (country) => country.uuid === field.value
+                                )?.name
+                              : "Select country"}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[300px] p-0">
+                        <Command>
+                          <CommandInput placeholder="Search country..." />
+                          <CommandList>
+                            <CommandEmpty>No country found.</CommandEmpty>
+                            <CommandGroup>
+                              {countries.map((country) => (
+                                <CommandItem
+                                  value={country.name}
+                                  key={country.uuid}
+                                  onSelect={() => {
+                                    form.setValue("country", country.uuid);
+                                    setOpen(false);
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      country.uuid === field.value
+                                        ? "opacity-100"
+                                        : "opacity-0"
+                                    )}
+                                  />
+                                  {country.name}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
                     <FormMessage />
                   </FormItem>
                 )}

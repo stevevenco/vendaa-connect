@@ -8,7 +8,7 @@ interface AuthContextType {
   isVerified: boolean;
   user: User | null;
   isLoading: boolean;
-  login: (accessToken: string, refreshToken: string) => void;
+  login: (accessToken: string, refreshToken: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -29,24 +29,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         try {
           return await getMe();
         } catch (error) {
-          // Token might be invalid/expired, treat as logged out
           return null;
         }
       }
       return null;
     },
-    retry: 1, // Retry once on failure
-    refetchOnWindowFocus: true, // Refetch on window focus
+    retry: 1,
+    refetchOnWindowFocus: true,
   });
 
   const isAuthenticated = !!user && !isError;
   const isVerified = user?.is_verified ?? false;
 
   const login = useCallback(
-    (accessToken: string, refreshToken: string) => {
+    async (accessToken: string, refreshToken: string) => {
       localStorage.setItem("access", accessToken);
       localStorage.setItem("refresh", refreshToken);
-      queryClient.invalidateQueries({ queryKey: ["user"] });
+      await queryClient.invalidateQueries({ queryKey: ["user"] });
     },
     [queryClient]
   );
@@ -54,7 +53,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const logout = useCallback(() => {
     localStorage.removeItem("access");
     localStorage.removeItem("refresh");
-    queryClient.setQueryData(["user"], null); // Immediately update the user state to null
+    queryClient.setQueryData(["user"], null);
     queryClient.invalidateQueries({ queryKey: ["user"] });
   }, [queryClient]);
 
