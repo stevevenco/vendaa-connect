@@ -50,9 +50,10 @@ import {
   Trash2,
   Loader2
 } from "lucide-react";
+import { useMetersData } from "@/hooks/useMetersData";
 import { useOrganizations } from "@/hooks/useOrganizations";
-import { getMeters, createMeter, deleteMeter, ApiError } from "@/services/api";
-import { Meter, CreateMeterSchema, TCreateMeterSchema, PaginatedResponse } from "@/types";
+import { createMeter, deleteMeter, ApiError } from "@/services/api";
+import { Meter, CreateMeterSchema, TCreateMeterSchema } from "@/types";
 import { useToast } from "@/components/ui/use-toast";
 import {
   AlertDialog,
@@ -71,39 +72,23 @@ export default function MetersPage() {
   const { selectedOrganization } = useOrganizations();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
-  const [metersResponse, setMetersResponse] = useState<PaginatedResponse<Meter> | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState("list");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
 
+  const {
+    totalMeters,
+    electricityMeters,
+    waterMeters,
+    gasMeters,
+    meters,
+    isLoading,
+    page,
+    setPage,
+    totalPages,
+  } = useMetersData();
 
   const [meterToDelete, setMeterToDelete] = useState<Meter | null>(null);
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
-
-  const fetchMeters = useCallback(async (page = 1, size = 10) => {
-    if (!selectedOrganization) return;
-    setIsLoading(true);
-    setError(null);
-    try {
-      const data = await getMeters(selectedOrganization.uuid, page, size);
-      setMetersResponse(data);
-      setCurrentPage(page);
-    } catch (err) {
-      setError("Failed to fetch meters.");
-      console.error(err);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [selectedOrganization]);
-
-  useEffect(() => {
-    if (selectedOrganization) {
-      fetchMeters(currentPage, pageSize);
-    }
-  }, [selectedOrganization, currentPage, pageSize, fetchMeters]);
 
   const form = useForm<TCreateMeterSchema>({
     resolver: zodResolver(CreateMeterSchema),
@@ -141,7 +126,7 @@ export default function MetersPage() {
         description: "Meter created successfully.",
       });
       form.reset();
-      fetchMeters(1, pageSize); // Refresh the list to the first page
+      setPage(1); // Refresh the list to the first page
       setActiveTab("list");
     } catch (err) {
       if (err instanceof ApiError) {
@@ -171,7 +156,7 @@ export default function MetersPage() {
         description: "Meter deleted successfully.",
       });
       // Refresh the current page
-      fetchMeters(currentPage, pageSize);
+      setPage(page);
     } catch (err) {
       toast({
         variant: "destructive",
@@ -188,8 +173,6 @@ export default function MetersPage() {
     setMeterToDelete(meter);
     setIsDeleteAlertOpen(true);
   };
-
-  const meters = metersResponse?.results || [];
 
   const filteredMeters = meters.filter(meter =>
     meter.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -210,8 +193,8 @@ export default function MetersPage() {
     return text.length > maxLength ? `${text.substring(0, maxLength)}...` : text;
   };
   
-  const handlePageChange = (page: number) => {
-    fetchMeters(page, pageSize);
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
   };
 
 
@@ -243,7 +226,7 @@ export default function MetersPage() {
             <Gauge className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-lg sm:text-2xl font-bold">{isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : metersResponse?.count ?? 0}</div>
+            <div className="text-lg sm:text-2xl font-bold">{isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : totalMeters}</div>
             <p className="text-xs text-muted-foreground">
               Across all utility types
             </p>
@@ -256,7 +239,7 @@ export default function MetersPage() {
           </CardHeader>
           <CardContent>
             <div className="text-lg sm:text-2xl font-bold">
-              {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : meters.filter(m => m.meter_type === 'electricity').length}
+              {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : electricityMeters}
             </div>
             <p className="text-xs text-muted-foreground">
               Active electricity meters
@@ -270,7 +253,7 @@ export default function MetersPage() {
           </CardHeader>
           <CardContent>
             <div className="text-lg sm:text-2xl font-bold">
-              {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : meters.filter(m => m.meter_type === 'water').length}
+              {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : waterMeters}
             </div>
             <p className="text-xs text-muted-foreground">
               Active water meters
@@ -284,7 +267,7 @@ export default function MetersPage() {
           </CardHeader>
           <CardContent>
             <div className="text-lg sm:text-2xl font-bold">
-              {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : meters.filter(m => m.meter_type === 'gas').length}
+              {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : gasMeters}
             </div>
             <p className="text-xs text-muted-foreground">
               Active gas meters
@@ -336,12 +319,6 @@ export default function MetersPage() {
                     <TableRow>
                       <TableCell colSpan={6} className="text-center">
                         <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
-                      </TableCell>
-                    </TableRow>
-                  ) : error ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center text-red-500">
-                        {error}
                       </TableCell>
                     </TableRow>
                   ) : filteredMeters.length === 0 ? (
@@ -406,7 +383,7 @@ export default function MetersPage() {
                   )}
                 </TableBody>
               </Table>
-              {metersResponse && metersResponse.total_pages > 1 ? (
+              {totalPages > 1 ? (
                 <CardFooter className="flex justify-center pt-4">
                   <Pagination>
                     <PaginationContent>
@@ -415,14 +392,14 @@ export default function MetersPage() {
                           href="#"
                           onClick={(e) => {
                             e.preventDefault();
-                            handlePageChange(currentPage - 1);
+                            handlePageChange(page - 1);
                           }}
-                          className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
+                          className={page === 1 ? "pointer-events-none opacity-50" : ""}
                         />
                       </PaginationItem>
                       <PaginationItem>
                         <span className="text-sm font-medium">
-                          Page {currentPage} of {metersResponse.total_pages}
+                          Page {page} of {totalPages}
                         </span>
                       </PaginationItem>
                       <PaginationItem>
@@ -430,9 +407,9 @@ export default function MetersPage() {
                           href="#"
                           onClick={(e) => {
                             e.preventDefault();
-                            handlePageChange(currentPage + 1);
+                            handlePageChange(page + 1);
                           }}
-                          className={currentPage === metersResponse.total_pages ? "pointer-events-none opacity-50" : ""}
+                          className={page === totalPages ? "pointer-events-none opacity-50" : ""}
                         />
                       </PaginationItem>
                     </PaginationContent>
@@ -440,7 +417,7 @@ export default function MetersPage() {
                 </CardFooter>
               ) : (
                 <div className="text-center text-sm text-muted-foreground pt-4">
-                  {metersResponse ? `Only one page available (Total pages: ${metersResponse.total_pages})` : "No meters data loaded"}
+                  {totalPages ? `Only one page available (Total pages: ${totalPages})` : "No meters data loaded"}
                 </div>
               )}
             </CardContent>

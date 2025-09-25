@@ -304,8 +304,8 @@ export const createOrganization = (
 };
 
 // Wallet Related Endpoints (Assuming these still use API versioning)
-export const getWalletBalance = (organizationId: string): Promise<{ balance: string }> => {
-  return authApi<{ available_balance: string }>(`/wallet/balance/${organizationId}/`);
+export const getWalletBalance = (organizationId: string): Promise<{ available_balance: string; ledger_balance: string; wallet_id: string; currency: string; }> => {
+  return authApi<{ available_balance: string; ledger_balance: string; wallet_id: string; currency: string; }>(`/wallet/balance/${organizationId}/`);
 };
 
 export const createWallet = (organization_id: string): Promise<any> => {
@@ -325,21 +325,70 @@ export const initiateWalletFunding = (
   );
 };
 
-export const getTransactions = (organizationId: string, page: number = 1, pageSize: number = 10, month: string | null = null): Promise<PaginatedResponse<Transaction>> => {
-  let url = `/wallet/transactions/${organizationId}/?page=${page}&page_size=${pageSize}`;
+export const getTransactions = (
+  organizationId: string,
+  page: number = 1,
+  pageSize: number = 10,
+  month: string | null = null,
+  noPagination: boolean = false
+): Promise<PaginatedResponse<Transaction>> => {
+  let url = `/wallet/transactions/${organizationId}/?`;
+  if (noPagination) {
+    url += `no_pagination=true&`;
+  } else {
+    url += `page=${page}&page_size=${pageSize}&`;
+  }
   if (month && month !== "all") {
-    url += `&month=${month}`;
+    url += `month=${month}`;
   }
   return authApi<PaginatedResponse<Transaction>>(url);
 };
 
-export const getUtilityVends = (orgId: string, page: number = 1, pageSize: number = 10): Promise<PaginatedResponse<UtilityVend>> => {
-  return authApi<PaginatedResponse<UtilityVend>>(`/organizations/${orgId}/utility-vends/?page=${page}&page_size=${pageSize}`);
+export const getUtilityVends = (
+  orgId: string,
+  page?: number,
+  pageSize?: number,
+  tokenType?: string,
+  date?: string,
+  noPagination?: boolean,
+  month?: string
+): Promise<PaginatedResponse<UtilityVend> | UtilityVend[]> => {
+  let url = `/organizations/${orgId}/utility-vends/?`;
+  if (page) url += `page=${page}&`;
+  if (pageSize) url += `page_size=${pageSize}&`;
+  if (tokenType) url += `token_type=${tokenType}&`;
+  if (date) url += `created__date=${date}&`;
+  if (month) url += `month=${month}&`;
+  if (noPagination) url += `no_pagination=true&`;
+
+  // Remove trailing '&' or '?'
+  url = url.replace(/[&?]$/, "");
+
+  return authApi<PaginatedResponse<UtilityVend> | UtilityVend[]>(url);
+};
+
+export const getUtilityVend = (orgId: string, vendId: string): Promise<UtilityVend> => {
+  return authApi<UtilityVend>(`/organizations/${orgId}/utility-vends/${vendId}/`);
 };
 
 // Meter Related Endpoints
-export const getMeters = (orgId: string, page: number = 1, pageSize: number = 10): Promise<PaginatedResponse<Meter>> => {
-  return authApi<PaginatedResponse<Meter>>(`/organizations/${orgId}/meters/?page=${page}&page_size=${pageSize}`);
+export const getMeters = (
+  orgId: string,
+  page: number = 1,
+  pageSize: number = 10,
+  meterType: string | null = null,
+  noPagination: boolean = false
+): Promise<PaginatedResponse<Meter>> => {
+  let url = `/organizations/${orgId}/meters/?`;
+  if (noPagination) {
+    url += `no_pagination=true&`;
+  } else {
+    url += `page=${page}&page_size=${pageSize}&`;
+  }
+  if (meterType) {
+    url += `&meter_type=${meterType}`;
+  }
+  return authApi<PaginatedResponse<Meter>>(url);
 };
 
 export const createMeter = (

@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Wallet, Plus, ArrowUpDown, History, RefreshCw } from "lucide-react";
-import { useOrganizations } from "@/hooks/useOrganizations";
+import { useWalletData } from "@/hooks/useWalletData";
 import { useTopUp } from "@/hooks/useTopUp";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -17,34 +17,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 export default function WalletPage() {
   const [selectedMonth, setSelectedMonth] = useState("all");
-  const [currentPage, setCurrentPage] = useState(1);
   const {
     walletBalance,
-    isLoading,
-    selectedOrganization,
-    fetchWalletBalance,
-    isBalanceLoading,
     transactions,
-    transactionsTotalPages,
-    isTransactionsLoading,
-    fetchTransactions,
-  } = useOrganizations();
+    isLoading,
+    page,
+    setPage,
+    totalPages,
+  } = useWalletData(selectedMonth);
   const { openModal } = useTopUp();
 
-  useEffect(() => {
-    if (selectedOrganization) {
-      fetchTransactions(selectedOrganization.uuid, currentPage, selectedMonth);
-    }
-  }, [selectedOrganization, currentPage, selectedMonth, fetchTransactions]);
-
-
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
   };
 
-  const filteredTransactions = transactions;
-
-  // Function to truncate text longer than 20 characters
   const truncateText = (text: string, maxLength: number = 20) => {
     return text.length > maxLength ? `${text.substring(0, maxLength)}...` : text;
   };
@@ -74,15 +60,6 @@ export default function WalletPage() {
               <Wallet className="h-4 w-4" />
               Current Balance
             </CardTitle>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6 text-primary-foreground/80 hover:text-primary-foreground"
-              onClick={() => selectedOrganization && fetchWalletBalance(selectedOrganization.uuid)}
-              disabled={isBalanceLoading}
-            >
-              <RefreshCw className={`h-4 w-4 ${isBalanceLoading ? 'animate-spin' : ''}`} />
-            </Button>
           </CardHeader>
           <CardContent>
             {isLoading ? (
@@ -127,20 +104,11 @@ export default function WalletPage() {
                       ))}
                     </SelectContent>
                   </Select>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => selectedOrganization && fetchTransactions(selectedOrganization.uuid, currentPage, selectedMonth)}
-                    disabled={isTransactionsLoading}
-                  >
-                    <RefreshCw className={`h-4 w-4 ${isTransactionsLoading ? 'animate-spin' : ''}`} />
-                  </Button>
                 </div>
               </div>
             </CardHeader>
             <CardContent>
-              {isTransactionsLoading ? (
+              {isLoading ? (
                 <div className="space-y-4">
                   {[...Array(5)].map((_, i) => (
                     <div key={i} className="flex items-center justify-between p-4 border rounded-lg">
@@ -160,7 +128,7 @@ export default function WalletPage() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {filteredTransactions.map((transaction) => (
+                  {transactions.map((transaction) => (
                     <div
                       key={transaction.transaction_id}
                       className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
@@ -179,14 +147,14 @@ export default function WalletPage() {
                       </div>
                       <div className="text-right">
                         <Badge
-                          variant={transaction.status === 'success' ? 'default' : 'secondary'}
+                          variant={transaction.status === 'successful' ? 'default' : 'secondary'}
                           className="mb-1 text-xs sm:text-sm"
                         >
                           {transaction.amount}
                         </Badge>
                         <p className="text-xs capitalize"
                           style={{
-                            color: transaction.status === 'success' ? 'green' : transaction.status === 'failed' ? 'red' : 'orange'
+                            color: transaction.status === 'successful' ? 'green' : transaction.status === 'failed' ? 'red' : 'orange'
                           }}
                         >
                           {transaction.status}
@@ -197,7 +165,7 @@ export default function WalletPage() {
                 </div>
               )}
             </CardContent>
-            {transactionsTotalPages > 1 && (
+            {totalPages > 1 && (
               <CardFooter className="flex justify-center pt-4">
                 <Pagination>
                   <PaginationContent>
@@ -206,14 +174,14 @@ export default function WalletPage() {
                         href="#"
                         onClick={(e) => {
                           e.preventDefault();
-                          handlePageChange(currentPage - 1);
+                          handlePageChange(page - 1);
                         }}
-                        className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
+                        className={page === 1 ? "pointer-events-none opacity-50" : ""}
                       />
                     </PaginationItem>
                     <PaginationItem>
                       <span className="text-sm font-medium">
-                        Page {currentPage} of {transactionsTotalPages}
+                        Page {page} of {totalPages}
                       </span>
                     </PaginationItem>
                     <PaginationItem>
@@ -221,9 +189,9 @@ export default function WalletPage() {
                         href="#"
                         onClick={(e) => {
                           e.preventDefault();
-                          handlePageChange(currentPage + 1);
+                          handlePageChange(page + 1);
                         }}
-                        className={currentPage === transactionsTotalPages ? "pointer-events-none opacity-50" : ""}
+                        className={page === totalPages ? "pointer-events-none opacity-50" : ""}
                       />
                     </PaginationItem>
                   </PaginationContent>

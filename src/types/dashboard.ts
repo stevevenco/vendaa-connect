@@ -27,11 +27,12 @@ export interface UtilityVend {
 }
 
 export interface DashboardData {
+  walletBalance: string;
   activeMeters: number;
   vendsToday: number;
   recentVends: UtilityVend[];
-  utilityVends: UtilityVend[];
-  chartData: { month: string; amount: number }[];
+  utilityVendsOverview: any[];
+  walletActivityTrend: any[];
 }
 
 export interface UseDashboardData {

@@ -1,52 +1,102 @@
-import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
-import { 
-  FileText, 
-  Download, 
-  Filter,
-  BarChart3,
-  Activity,
-  Shield,
-  Wrench
-} from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { dummyTransactions, dummyReports } from "@/data/dummyData";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  ChartConfig,
+} from "@/components/ui/chart";
+import { Area, AreaChart, CartesianGrid, XAxis, Pie, PieChart, BarChart, Bar, Cell } from "recharts";
+import { Badge } from "@/components/ui/badge";
+import { useReportsData } from "@/hooks/useReportsData";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { Download, Filter, BarChart3, Wrench, Activity, Shield } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
-const COLORS = ['hsl(var(--primary))', 'hsl(var(--accent))', 'hsl(var(--warning))', 'hsl(var(--success))'];
+const Reports = () => {
+  const {
+    totalTransactions,
+    engineeringTokens,
+    managementTokens,
+    creditTokens,
+    creditGenerationTrend,
+    utilityDistribution,
+    recentCreditTransactions,
+    engineeringTokensReport,
+    managementTokensReport,
+    engineeringTokensPage,
+    setEngineeringTokensPage,
+    managementTokensPage,
+    setManagementTokensPage,
+    engineeringTokensTotalPages,
+    managementTokensTotalPages,
+    isLoading,
+  } = useReportsData();
+  const [selectedVend, setSelectedVend] = useState<UtilityVend | null>(null);
 
-export default function ReportsPage() {
-  const [activeTab, setActiveTab] = useState("transactions");
-  const creditTransactions = dummyTransactions.filter(t => t.type === 'credit_purchase');
-  const walletTransactions = dummyTransactions.filter(t => t.type === 'wallet_topup');
+  const creditTrendChartData = creditGenerationTrend.map((vend) => ({
+    month: new Date(vend.created).toLocaleString("default", { month: "short" }),
+    amount: parseFloat(vend.amount),
+  }));
 
-  const pieData = [
-    { name: 'Electricity', value: 65, color: 'hsl(var(--primary))' },
-    { name: 'Water', value: 25, color: 'hsl(var(--accent))' },
-    { name: 'Gas', value: 10, color: 'hsl(var(--warning))' },
+  const utilityDistributionChartData = [
+    { name: "Electricity", value: utilityDistribution.electricity, fill: "var(--color-electricity)" },
+    { name: "Water", value: utilityDistribution.water, fill: "var(--color-water)" },
+    { name: "Gas", value: utilityDistribution.gas, fill: "var(--color-gas)" },
   ];
 
-  const tabOptions = [
-    { value: "transactions", label: "Transactions" },
-    { value: "tokens", label: "Engineering Tokens" },
-    { value: "remote", label: "Management Tokens" },
-    { value: "security", label: "Security" },
-  ];
+  const chartConfig: ChartConfig = {
+    amount: {
+      label: "Amount",
+      color: "hsl(var(--chart-1))",
+    },
+    electricity: {
+      label: "Electricity",
+      color: "hsl(var(--chart-1))",
+    },
+    water: {
+      label: "Water",
+      color: "hsl(var(--chart-2))",
+    },
+    gas: {
+      label: "Gas",
+      color: "hsl(var(--chart-3))",
+    },
+  };
+
+  if (isLoading) {
+    return (
+      <div className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
+        <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
+          {[...Array(4)].map((_, i) => (
+            <Skeleton key={i} className="h-32" />
+          ))}
+        </div>
+        <div className="grid gap-4 md:gap-8 lg:grid-cols-2 xl:grid-cols-3">
+          <Skeleton className="h-96 xl:col-span-2" />
+          <Skeleton className="h-96" />
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6 p-4">
-      <div className="flex items-center justify-between flex-wrap gap-4">
+    <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
+       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Reports & Analytics</h1>
           <p className="text-sm sm:text-base text-muted-foreground">
@@ -64,485 +114,164 @@ export default function ReportsPage() {
           </Button>
         </div>
       </div>
-
-      {/* Overview Cards */}
-      <div className="flex md:grid md:gap-4 md:grid-cols-2 lg:grid-cols-4 overflow-x-auto snap-x snap-m Merry space-x-4 md:space-x-0 pb-4">
-        <Card className="min-w-[160px] snap-start md:min-w-0">
+      <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
+        <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs sm:text-sm font-medium">Total Transactions</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Transactions</CardTitle>
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-lg sm:text-2xl font-bold">{dummyTransactions.length}</div>
-            <p className="text-xs text-muted-foreground">
-              This month
-            </p>
+            <div className="text-2xl font-bold">{totalTransactions}</div>
           </CardContent>
         </Card>
-
-        <Card className="min-w-[160px] snap-start md:min-w-0">
+        <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs sm:text-sm font-medium">Engineering Tokens</CardTitle>
+            <CardTitle className="text-sm font-medium">Engineering Tokens (This Month)</CardTitle>
             <Wrench className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-lg sm:text-2xl font-bold">42</div>
-            <p className="text-xs text-muted-foreground">
-              Generated this month
-            </p>
+            <div className="text-2xl font-bold">{engineeringTokens}</div>
           </CardContent>
         </Card>
-
-        <Card className="min-w-[160px] snap-start md:min-w-0">
+        <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs sm:text-sm font-medium">Management Tokens</CardTitle>
+            <CardTitle className="text-sm font-medium">Management Tokens (This Month)</CardTitle>
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-lg sm:text-2xl font-bold">156</div>
-            <p className="text-xs text-muted-foreground">
-              Actions performed
-            </p>
+            <div className="text-2xl font-bold">{managementTokens}</div>
           </CardContent>
         </Card>
-
-        <Card className="min-w-[160px] snap-start md:min-w-0">
+        <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs sm:text-sm font-medium">Login Sessions</CardTitle>
+            <CardTitle className="text-sm font-medium">Credit Tokens (This Month)</CardTitle>
             <Shield className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-lg sm:text-2xl font-bold">23</div>
-            <p className="text-xs text-muted-foreground">
-              This week
-            </p>
+            <div className="text-2xl font-bold">{creditTokens}</div>
           </CardContent>
         </Card>
       </div>
-
-      {/* Mobile View: Dropdown */}
-      <div className="md:hidden space-y-4">
-        <Select value={activeTab} onValueChange={setActiveTab}>
-          <SelectTrigger className="text-sm">
-            <SelectValue placeholder="Select report type" />
-          </SelectTrigger>
-          <SelectContent>
-            {tabOptions.map((option) => (
-              <SelectItem key={option.value} value={option.value} className="text-sm">
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        {activeTab === "transactions" && (
-          <div className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base sm:text-lg">Credit Generation Trend</CardTitle>
-                  <CardDescription className="text-xs sm:text-sm">
-                    Monthly credit purchases across utility types
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={200}>
-                    <BarChart data={dummyReports.creditGenerated}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-                      <YAxis tick={{ fontSize: 12 }} />
-                      <Tooltip 
-                        formatter={(value: number) => [`₦${value.toLocaleString()}`, 'Amount']}
-                      />
-                      <Bar dataKey="amount" fill="hsl(var(--primary))" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base sm:text-lg">Utility Distribution</CardTitle>
-                  <CardDescription className="text-xs sm:text-sm">
-                    Credit purchases by utility type
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={200}>
-                    <PieChart>
-                      <Pie
-                        data={pieData}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                        outerRadius={60}
-                        fill="#8884d8"
-                        dataKey="value"
-                      >
-                        {pieData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
+      <div className="grid gap-4 md:gap-8 lg:grid-cols-2 xl:grid-cols-3">
+        <Card className="xl:col-span-2">
+          <CardHeader>
+            <CardTitle>Recent Credit Transactions</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Meter Number</TableHead>
+                  <TableHead>Amount</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Date</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {recentCreditTransactions.map((vend) => (
+                  <TableRow key={vend.uuid}>
+                    <TableCell>{vend.meter_number}</TableCell>
+                    <TableCell>{vend.amount}</TableCell>
+                    <TableCell>
+                      <Badge variant={vend.status === "successful" ? "default" : "destructive"}>
+                        {vend.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{new Date(vend.created).toLocaleDateString()}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Credit Generation Trend</CardTitle>
+          </CardHeader>
+          <CardContent className="pb-4">
+            <div className="h-[200px]">
+              <ChartContainer className="h-full w-full" config={chartConfig}>
+                <BarChart data={creditTrendChartData} margin={{ left: 12, right: 12 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis
+                    dataKey="month"
+                    tickLine={false}
+                    axisLine={false}
+                    tickMargin={8}
+                    tickFormatter={(value) => value.slice(0, 3)}
+                  />
+                   <ChartTooltip
+                    cursor={false}
+                    content={<ChartTooltipContent indicator="dot" />}
+                  />
+                  <Bar dataKey="amount" fill="var(--color-amount)" radius={4} />
+                </BarChart>
+              </ChartContainer>
             </div>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base sm:text-lg">Recent Credit Transactions</CardTitle>
-                <CardDescription className="text-xs sm:text-sm">
-                  Latest utility credit purchases with transaction details
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="text-xs sm:text-sm">Date/Time</TableHead>
-                      <TableHead className="text-xs sm:text-sm">Meter Number</TableHead>
-                      <TableHead className="text-xs sm:text-sm">Amount</TableHead>
-                      <TableHead className="text-xs sm:text-sm">Token</TableHead>
-                      <TableHead className="text-xs sm:text-sm">Balance After</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {creditTransactions.map((transaction) => (
-                      <TableRow key={transaction.id}>
-                        <TableCell className="text-xs sm:text-sm">
-                          <div>
-                            <div className="font-medium">
-                              {new Date(transaction.date).toLocaleDateString()}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              {new Date(transaction.date).toLocaleTimeString()}
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-xs sm:text-sm">{transaction.meterNumber}</TableCell>
-                        <TableCell className="text-xs sm:text-sm">
-                          <Badge variant="secondary">
-                            ₦{transaction.amount.toLocaleString()}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="font-mono text-xs">
-                          {transaction.token}
-                        </TableCell>
-                        <TableCell className="text-xs sm:text-sm">₦{transaction.balance.toLocaleString()}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        {activeTab === "tokens" && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base sm:text-lg">Engineering Tokens Report</CardTitle>
-              <CardDescription className="text-xs sm:text-sm">
-                All engineering tokens generated for meter operations
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="text-xs sm:text-sm">Date/Time</TableHead>
-                    <TableHead className="text-xs sm:text-sm">Token Type</TableHead>
-                    <TableHead className="text-xs sm:text-sm">Meter Number</TableHead>
-                    <TableHead className="text-xs sm:text-sm">Status</TableHead>
-                    <TableHead className="text-xs sm:text-sm">Generated By</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  <TableRow>
-                    <TableCell className="text-xs sm:text-sm">
-                      <div>
-                        <div className="font-medium">2024-01-15</div>
-                        <div className="text-xs text-muted-foreground">10:30 AM</div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-xs sm:text-sm">
-                      <Badge>Key Change Token</Badge>
-                    </TableCell>
-                    <TableCell className="text-xs sm:text-sm">MTR001234</TableCell>
-                    <TableCell className="text-xs sm:text-sm">
-                      <Badge variant="outline" className="text-green-600 border-green-600">
-                        Applied
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-xs sm:text-sm">John Doe</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="text-xs sm:text-sm">
-                      <div>
-                        <div className="font-medium">2024-01-14</div>
-                        <div className="text-xs text-muted-foreground">3:45 PM</div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-xs sm:text-sm">
-                      <Badge variant="secondary">Clear Credit</Badge>
-                    </TableCell>
-                    <TableCell className="text-xs sm:text-sm">MTR005678</TableCell>
-                    <TableCell className="text-xs sm:text-sm">
-                      <Badge variant="outline" className="text-green-600 border-green-600">
-                        Applied
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-xs sm:text-sm">Sarah Smith</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="text-xs sm:text-sm">
-                      <div>
-                        <div className="font-medium">2024-01-13</div>
-                        <div className="text-xs text-muted-foreground">9:15 AM</div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-xs sm:text-sm">
-                      <Badge variant="destructive">Clear Tamper</Badge>
-                    </TableCell>
-                    <TableCell className="text-xs sm:text-sm">MTR001234</TableCell>
-                    <TableCell className="text-xs sm:text-sm">
-                      <Badge variant="outline" className="text-green-600 border-green-600">
-                        Applied
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-xs sm:text-sm">John Doe</TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        )}
-
-        {activeTab === "remote" && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base sm:text-lg">Management Token</CardTitle>
-              <CardDescription className="text-xs sm:text-sm">
-                Log of all meter management tokens performed on meters
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="text-xs sm:text-sm">Date/Time</TableHead>
-                    <TableHead className="text-xs sm:text-sm">Action</TableHead>
-                    <TableHead className="text-xs sm:text-sm">Meter Number</TableHead>
-                    <TableHead className="text-xs sm:text-sm">Result</TableHead>
-                    <TableHead className="text-xs sm:text-sm">Performed By</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {dummyReports.meterActions.map((action, index) => (
-                    <TableRow key={index}>
-                      <TableCell className="text-xs sm:text-sm">
-                        <div>
-                          <div className="font-medium">{action.date}</div>
-                          <div className="text-xs text-muted-foreground">Various times</div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-xs sm:text-sm">
-                        <Badge variant="outline">{action.action}</Badge>
-                      </TableCell>
-                      <TableCell className="text-xs sm:text-sm">Various</TableCell>
-                      <TableCell className="text-xs sm:text-sm">
-                        <Badge variant="outline" className="text-green-600 border-green-600">
-                          Success ({action.count})
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-xs sm:text-sm">System Users</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        )}
-
-        {activeTab === "security" && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base sm:text-lg">User Login Activity</CardTitle>
-              <CardDescription className="text-xs sm:text-sm">
-                Security log of user authentication and session activity
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="text-xs sm:text-sm">Date/Time</TableHead>
-                    <TableHead className="text-xs sm:text-sm">User</TableHead>
-                    <TableHead className="text-xs sm:text-sm">IP Address</TableHead>
-                    <TableHead className="text-xs sm:text-sm">Status</TableHead>
-                    <TableHead className="text-xs sm:text-sm">Location</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  <TableRow>
-                    <TableCell className="text-xs sm:text-sm">
-                      <div>
-                        <div className="font-medium">2024-01-15</div>
-                        <div className="text-xs text-muted-foreground">8:30 AM</div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-xs sm:text-sm">john.doe@technova.com</TableCell>
-                    <TableCell className="text-xs sm:text-sm">192.168.1.100</TableCell>
-                    <TableCell className="text-xs sm:text-sm">
-                      <Badge variant="outline" className="text-green-600 border-green-600">
-                        Success
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-xs sm:text-sm">Lagos, Nigeria</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="text-xs sm:text-sm">
-                      <div>
-                        <div className="font-medium">2024-01-14</div>
-                        <div className="text-xs text-muted-foreground">4:45 PM</div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-xs sm:text-sm">sarah.smith@technova.com</TableCell>
-                    <TableCell className="text-xs sm:text-sm">192.168.1.105</TableCell>
-                    <TableCell className="text-xs sm:text-sm">
-                      <Badge variant="outline" className="text-green-600 border-green-600">
-                        Success
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-xs sm:text-sm">Abuja, Nigeria</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="text-xs sm:text-sm">
-                      <div>
-                        <div className="font-medium">2024-01-13</div>
-                        <div className="text-xs text-muted-foreground">11:20 AM</div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-xs sm:text-sm">unknown@email.com</TableCell>
-                    <TableCell className="text-xs sm:text-sm">203.45.67.89</TableCell>
-                    <TableCell className="text-xs sm:text-sm">
-                      <Badge variant="destructive">
-                        Failed
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-xs sm:text-sm">Unknown</TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        )}
+          </CardContent>
+        </Card>
       </div>
-
-      {/* Desktop View: Tabs */}
-      <Tabs defaultValue="transactions" className="hidden md:block space-y-4" onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="transactions">Transactions</TabsTrigger>
-          <TabsTrigger value="tokens">Engineering Tokens</TabsTrigger>
-          <TabsTrigger value="remote">Management Tokens</TabsTrigger>
-          <TabsTrigger value="security">Security</TabsTrigger>
+      <div className="grid gap-4 md:gap-8 lg:grid-cols-2 xl:grid-cols-3">
+        <Card className="col-span-full">
+          <CardHeader>
+            <CardTitle>Utility Distribution</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ChartContainer
+              config={chartConfig}
+              className="mx-auto aspect-square max-h-[250px]"
+            >
+              <PieChart>
+                <ChartTooltip
+                  cursor={false}
+                  content={<ChartTooltipContent hideLabel />}
+                />
+                <Pie data={utilityDistributionChartData} dataKey="value" nameKey="name" innerRadius={60} >
+                {utilityDistributionChartData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.fill} />
+                  ))}
+                </Pie>
+              </PieChart>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+      </div>
+      <Tabs defaultValue="credit">
+        <TabsList>
+          <TabsTrigger value="credit">Credit Transactions</TabsTrigger>
+          <TabsTrigger value="engineering">Engineering Tokens</TabsTrigger>
+          <TabsTrigger value="management">Management Tokens</TabsTrigger>
         </TabsList>
-
-        <TabsContent value="transactions" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Credit Generation Trend</CardTitle>
-                <CardDescription>Monthly credit purchases across utility types</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={dummyReports.creditGenerated}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" />
-                    <YAxis />
-                    <Tooltip 
-                      formatter={(value: number) => [`₦${value.toLocaleString()}`, 'Amount']}
-                    />
-                    <Bar dataKey="amount" fill="hsl(var(--primary))" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Utility Distribution</CardTitle>
-                <CardDescription>Credit purchases by utility type</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={pieData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {pieData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </div>
-
+        <TabsContent value="credit">
           <Card>
             <CardHeader>
               <CardTitle>Recent Credit Transactions</CardTitle>
-              <CardDescription>
-                Latest utility credit purchases with transaction details
-              </CardDescription>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Date/Time</TableHead>
                     <TableHead>Meter Number</TableHead>
                     <TableHead>Amount</TableHead>
                     <TableHead>Token</TableHead>
-                    <TableHead>Balance After</TableHead>
+                    <TableHead>Transaction ID</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Date</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {creditTransactions.map((transaction) => (
-                    <TableRow key={transaction.id}>
+                  {recentCreditTransactions.map((vend) => (
+                    <TableRow key={vend.uuid} onClick={() => setSelectedVend(vend)} className="cursor-pointer">
+                      <TableCell>{vend.meter_number}</TableCell>
+                      <TableCell>{vend.amount}</TableCell>
+                      <TableCell>{vend.token.join(", ")}</TableCell>
+                      <TableCell>{vend.transaction}</TableCell>
                       <TableCell>
-                        <div>
-                          <div className="font-medium">
- Temos                            {new Date(transaction.date).toLocaleDateString()}
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            {new Date(transaction.date).toLocaleTimeString()}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>{transaction.meterNumber}</TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">
-                          ₦{transaction.amount.toLocaleString()}
+                        <Badge variant={vend.status === "successful" ? "default" : "destructive"}>
+                          {vend.status}
                         </Badge>
                       </TableCell>
-                      <TableCell className="font-mono text-sm">
-                        {transaction.token}
-                      </TableCell>
-                      <TableCell>₦{transaction.balance.toLocaleString()}</TableCell>
+                      <TableCell>{new Date(vend.created).toLocaleDateString()}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -550,207 +279,140 @@ export default function ReportsPage() {
             </CardContent>
           </Card>
         </TabsContent>
-
-        <TabsContent value="tokens" className="space-y-4">
+        <TabsContent value="engineering">
           <Card>
             <CardHeader>
               <CardTitle>Engineering Tokens Report</CardTitle>
-              <CardDescription>
-                All engineering tokens generated for meter operations
-              </CardDescription>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Date/Time</TableHead>
-                    <TableHead>Token Type</TableHead>
                     <TableHead>Meter Number</TableHead>
+                    <TableHead>Token</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Generated By</TableHead>
+                    <TableHead>Date</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  <TableRow>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">2024-01-15</div>
-                        <div className="text-sm text-muted-foreground">10:30 AM</div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge>Key Change Token</Badge>
-                    </TableCell>
-                    <TableCell>MTR001234</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="text-green-600 border-green-600">
-                        Applied
-                      </Badge>
-                    </TableCell>
-                    <TableCell>John Doe</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">2024-01-14</div>
-                        <div className="text-sm text-muted-foreground">3:45 PM</div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">Clear Credit</Badge>
-                    </TableCell>
-                    <TableCell>MTR005678</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="text-green-600 border-green-600">
-                        Applied
-                      </Badge>
-                    </TableCell>
-                    <TableCell>Sarah Smith</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">2024-01-13</div>
-                        <div className="text-sm text-muted-foreground">9:15 AM</div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="destructive">Clear Tamper</Badge>
-                    </TableCell>
-                    <TableCell>MTR001234</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="text-green-600 border-green-600">
-                        Applied
-                      </Badge>
-                    </TableCell>
-                    <TableCell>John Doe</TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="remote" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Management Tokens</CardTitle>
-              <CardDescription>
-                Log of all meter management tokens performed on meters
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date/Time</TableHead>
-                    <TableHead>Action</TableHead>
-                    <TableHead>Meter Number</TableHead>
-                    <TableHead>Result</TableHead>
-                    <TableHead>Performed By</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {dummyReports.meterActions.map((action, index) => (
-                    <TableRow key={index}>
+                  {engineeringTokensReport.map((vend) => (
+                    <TableRow key={vend.uuid}>
+                      <TableCell>{vend.meter_number}</TableCell>
+                      <TableCell>{vend.token.join(", ")}</TableCell>
                       <TableCell>
-                        <div>
-                          <div className="font-medium">{action.date}</div>
-                          <div className="text-sm text-muted-foreground">Various times</div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{action.action}</Badge>
-                      </TableCell>
-                      <TableCell>Various</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="text-green-600 border-green-600">
-                          Success ({action.count})
+                        <Badge variant={vend.status === "successful" ? "default" : "destructive"}>
+                          {vend.status}
                         </Badge>
                       </TableCell>
-                      <TableCell>System Users</TableCell>
+                      <TableCell>{new Date(vend.created).toLocaleDateString()}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
             </CardContent>
+            <CardFooter>
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      href="#"
+                      onClick={() => setEngineeringTokensPage(engineeringTokensPage - 1)}
+                      className={engineeringTokensPage === 1 ? "pointer-events-none opacity-50" : ""}
+                    />
+                  </PaginationItem>
+                  <PaginationItem>
+                    Page {engineeringTokensPage} of {engineeringTokensTotalPages}
+                  </PaginationItem>
+                  <PaginationItem>
+                    <PaginationNext
+                      href="#"
+                      onClick={() => setEngineeringTokensPage(engineeringTokensPage + 1)}
+                      className={engineeringTokensPage === engineeringTokensTotalPages ? "pointer-events-none opacity-50" : ""}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </CardFooter>
           </Card>
         </TabsContent>
-
-        <TabsContent value="security" className="space-y-4">
+        <TabsContent value="management">
           <Card>
             <CardHeader>
-              <CardTitle>User Login Activity</CardTitle>
-              <CardDescription>
-                Security log of user authentication and session activity
-              </CardDescription>
+              <CardTitle>Management Tokens Report</CardTitle>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Date/Time</TableHead>
-                    <TableHead>User</TableHead>
-                    <TableHead>IP Address</TableHead>
+                    <TableHead>Meter Number</TableHead>
+                    <TableHead>Token</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Location</TableHead>
+                    <TableHead>Date</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  <TableRow>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">2024-01-15</div>
-                        <div className="text-sm text-muted-foreground">8:30 AM</div>
-                      </div>
-                    </TableCell>
-                    <TableCell>john.doe@technova.com</TableCell>
-                    <TableCell>192.168.1.100</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="text-green-600 border-green-600">
-                        Success
-                      </Badge>
-                    </TableCell>
-                    <TableCell>Lagos, Nigeria</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">2024-01-14</div>
-                        <div className="text-sm text-muted-foreground">4:45 PM</div>
-                      </div>
-                    </TableCell>
-                    <TableCell>sarah.smith@technova.com</TableCell>
-                    <TableCell>192.168.1.105</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="text-green-600 border-green-600">
-                        Success
-                      </Badge>
-                    </TableCell>
-                    <TableCell>Abuja, Nigeria</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">2024-01-13</div>
-                        <div className="text-sm text-muted-foreground">11:20 AM</div>
-                      </div>
-                    </TableCell>
-                    <TableCell>unknown@email.com</TableCell>
-                    <TableCell>203.45.67.89</TableCell>
-                    <TableCell>
-                      <Badge variant="destructive">
-                        Failed
-                      </Badge>
-                    </TableCell>
-                    <TableCell>Unknown</TableCell>
-                  </TableRow>
+                  {managementTokensReport.map((vend) => (
+                    <TableRow key={vend.uuid}>
+                      <TableCell>{vend.meter_number}</TableCell>
+                      <TableCell>{vend.token.join(", ")}</TableCell>
+                      <TableCell>
+                        <Badge variant={vend.status === "successful" ? "default" : "destructive"}>
+                          {vend.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{new Date(vend.created).toLocaleDateString()}</TableCell>
+                    </TableRow>
+                  ))}
                 </TableBody>
               </Table>
             </CardContent>
+            <CardFooter>
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      href="#"
+                      onClick={() => setManagementTokensPage(managementTokensPage - 1)}
+                      className={managementTokensPage === 1 ? "pointer-events-none opacity-50" : ""}
+                    />
+                  </PaginationItem>
+                  <PaginationItem>
+                    Page {managementTokensPage} of {managementTokensTotalPages}
+                  </PaginationItem>
+                  <PaginationItem>
+                    <PaginationNext
+                      href="#"
+                      onClick={() => setManagementTokensPage(managementTokensPage + 1)}
+                      className={managementTokensPage === managementTokensTotalPages ? "pointer-events-none opacity-50" : ""}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </CardFooter>
           </Card>
         </TabsContent>
       </Tabs>
-    </div>
+      <Dialog open={!!selectedVend} onOpenChange={() => setSelectedVend(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Transaction Details</DialogTitle>
+            <DialogDescription>
+              Details for transaction on meter {selectedVend?.meter_number}
+            </DialogDescription>
+          </DialogHeader>
+          {selectedVend && (
+            <div className="space-y-2">
+              <p><strong>Meter Number:</strong> {selectedVend.meter_number}</p>
+              <p><strong>Amount:</strong> {selectedVend.amount}</p>
+              <p><strong>Status:</strong> {selectedVend.status}</p>
+              <p><strong>Date:</strong> {new Date(selectedVend.created).toLocaleString()}</p>
+              <p><strong>Token:</strong> {selectedVend.token.join(", ")}</p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </main>
   );
-}
+};
+
+export default Reports;
