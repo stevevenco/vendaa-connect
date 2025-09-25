@@ -333,8 +333,8 @@ export const getTransactions = (organizationId: string, page: number = 1, pageSi
   return authApi<PaginatedResponse<Transaction>>(url);
 };
 
-export const getUtilityVends = (orgId: string): Promise<UtilityVend[]> => {
-  return authApi<UtilityVend[]>(`/organizations/${orgId}/utility-vends/`);
+export const getUtilityVends = (orgId: string, page: number = 1, pageSize: number = 10): Promise<PaginatedResponse<UtilityVend>> => {
+  return authApi<PaginatedResponse<UtilityVend>>(`/organizations/${orgId}/utility-vends/?page=${page}&page_size=${pageSize}`);
 };
 
 // Meter Related Endpoints

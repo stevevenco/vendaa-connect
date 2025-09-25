@@ -40,7 +40,7 @@ export default function ReportsPage() {
   const tabOptions = [
     { value: "transactions", label: "Transactions" },
     { value: "tokens", label: "Engineering Tokens" },
-    { value: "remote", label: "Remote Actions" },
+    { value: "remote", label: "Management Tokens" },
     { value: "security", label: "Security" },
   ];
 
@@ -95,7 +95,7 @@ export default function ReportsPage() {
 
         <Card className="min-w-[160px] snap-start md:min-w-0">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs sm:text-sm font-medium">Remote Actions</CardTitle>
+            <CardTitle className="text-xs sm:text-sm font-medium">Management Tokens</CardTitle>
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -324,9 +324,9 @@ export default function ReportsPage() {
         {activeTab === "remote" && (
           <Card>
             <CardHeader>
-              <CardTitle className="text-base sm:text-lg">Remote Meter Actions</CardTitle>
+              <CardTitle className="text-base sm:text-lg">Management Token</CardTitle>
               <CardDescription className="text-xs sm:text-sm">
-                Log of all remote operations performed on meters
+                Log of all meter management tokens performed on meters
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -447,7 +447,7 @@ export default function ReportsPage() {
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="transactions">Transactions</TabsTrigger>
           <TabsTrigger value="tokens">Engineering Tokens</TabsTrigger>
-          <TabsTrigger value="remote">Remote Actions</TabsTrigger>
+          <TabsTrigger value="remote">Management Tokens</TabsTrigger>
           <TabsTrigger value="security">Security</TabsTrigger>
         </TabsList>
 
@@ -634,9 +634,9 @@ export default function ReportsPage() {
         <TabsContent value="remote" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Remote Meter Actions</CardTitle>
+              <CardTitle>Management Tokens</CardTitle>
               <CardDescription>
-                Log of all remote operations performed on meters
+                Log of all meter management tokens performed on meters
               </CardDescription>
             </CardHeader>
             <CardContent>
