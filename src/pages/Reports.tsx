@@ -33,46 +33,74 @@ export default function ReportsPage() {
   const [activeTab, setActiveTab] = useState("transactions");
   const { selectedOrganization } = useOrganization();
   const [creditGenerationData, setCreditGenerationData] = useState(dummyReports.creditGenerated);
+  const [utilityDistributionData, setUtilityDistributionData] = useState([
+    { name: 'Electricity', value: 0, color: 'hsl(var(--primary))' },
+    { name: 'Water', value: 0, color: 'hsl(var(--accent))' },
+    { name: 'Gas', value: 0, color: 'hsl(var(--warning))' },
+  ]);
 
   useEffect(() => {
     if (selectedOrganization) {
-      const fetchCreditGenerationData = async () => {
+      const fetchData = async () => {
         try {
           const utilityVends: UtilityVend[] = await getAllUtilityVends(selectedOrganization.uuid);
           const now = new Date();
           const currentYear = now.getFullYear();
 
+          // Process data for credit generation trend
           const monthlyData = Array.from({ length: 12 }, (_, i) => ({
             month: new Date(0, i).toLocaleString('default', { month: 'short' }),
             amount: 0,
           }));
 
+          // Process data for utility distribution
+          const distribution: { [key: string]: number } = {
+            electricity: 0,
+            water: 0,
+            gas: 0,
+          };
+
           utilityVends.forEach(vend => {
+            // Credit generation data
             const vendDate = new Date(vend.created);
             if (vendDate.getFullYear() === currentYear) {
               const monthIndex = vendDate.getMonth();
               monthlyData[monthIndex].amount += parseFloat(vend.amount);
             }
+
+            // Utility distribution data
+            if (vend.meter_type && distribution.hasOwnProperty(vend.meter_type)) {
+              distribution[vend.meter_type] += 1;
+            }
           });
+
           setCreditGenerationData(monthlyData);
+
+          const newPieData = [
+            { name: 'Electricity', value: distribution.electricity, color: 'hsl(var(--primary))' },
+            { name: 'Water', value: distribution.water, color: 'hsl(var(--accent))' },
+            { name: 'Gas', value: distribution.gas, color: 'hsl(var(--warning))' },
+          ];
+          setUtilityDistributionData(newPieData);
+
         } catch (error) {
           console.error("Failed to fetch utility vends:", error);
+          // Fallback to dummy data in case of an error
           setCreditGenerationData(dummyReports.creditGenerated);
+          setUtilityDistributionData([
+            { name: 'Electricity', value: 65, color: 'hsl(var(--primary))' },
+            { name: 'Water', value: 25, color: 'hsl(var(--accent))' },
+            { name: 'Gas', value: 10, color: 'hsl(var(--warning))' },
+          ]);
         }
       };
 
-      fetchCreditGenerationData();
+      fetchData();
     }
   }, [selectedOrganization]);
 
   const creditTransactions = dummyTransactions.filter(t => t.type === 'credit_purchase');
   const walletTransactions = dummyTransactions.filter(t => t.type === 'wallet_topup');
-
-  const pieData = [
-    { name: 'Electricity', value: 65, color: 'hsl(var(--primary))' },
-    { name: 'Water', value: 25, color: 'hsl(var(--accent))' },
-    { name: 'Gas', value: 10, color: 'hsl(var(--warning))' },
-  ];
 
   const tabOptions = [
     { value: "transactions", label: "Transactions" },
@@ -208,7 +236,7 @@ export default function ReportsPage() {
                   <ResponsiveContainer width="100%" height={200}>
                     <PieChart>
                       <Pie
-                        data={pieData}
+                        data={utilityDistributionData}
                         cx="50%"
                         cy="50%"
                         labelLine={false}
@@ -217,8 +245,8 @@ export default function ReportsPage() {
                         fill="#8884d8"
                         dataKey="value"
                       >
-                        {pieData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        {utilityDistributionData.map((entry) => (
+                          <Cell key={`cell-${entry.name}`} fill={entry.color} />
                         ))}
                       </Pie>
                       <Tooltip />
@@ -519,7 +547,7 @@ export default function ReportsPage() {
                 <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
                     <Pie
-                      data={pieData}
+                      data={utilityDistributionData}
                       cx="50%"
                       cy="50%"
                       labelLine={false}
@@ -528,8 +556,8 @@ export default function ReportsPage() {
                       fill="#8884d8"
                       dataKey="value"
                     >
-                      {pieData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      {utilityDistributionData.map((entry) => (
+                        <Cell key={`cell-${entry.name}`} fill={entry.color} />
                       ))}
                     </Pie>
                     <Tooltip />
