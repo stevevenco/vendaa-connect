@@ -1,7 +1,4 @@
-import { useState, useEffect } from "react";
-import { useOrganization } from "@/context/useOrganization";
-import { getAllUtilityVends } from "@/services/api";
-import { UtilityVend } from "@/types";
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -31,40 +28,6 @@ const COLORS = ['hsl(var(--primary))', 'hsl(var(--accent))', 'hsl(var(--warning)
 
 export default function ReportsPage() {
   const [activeTab, setActiveTab] = useState("transactions");
-  const { selectedOrganization } = useOrganization();
-  const [creditGenerationData, setCreditGenerationData] = useState(dummyReports.creditGenerated);
-
-  useEffect(() => {
-    if (selectedOrganization) {
-      const fetchCreditGenerationData = async () => {
-        try {
-          const utilityVends: UtilityVend[] = await getAllUtilityVends(selectedOrganization.uuid);
-          const now = new Date();
-          const currentYear = now.getFullYear();
-
-          const monthlyData = Array.from({ length: 12 }, (_, i) => ({
-            month: new Date(0, i).toLocaleString('default', { month: 'short' }),
-            amount: 0,
-          }));
-
-          utilityVends.forEach(vend => {
-            const vendDate = new Date(vend.created);
-            if (vendDate.getFullYear() === currentYear) {
-              const monthIndex = vendDate.getMonth();
-              monthlyData[monthIndex].amount += parseFloat(vend.amount);
-            }
-          });
-          setCreditGenerationData(monthlyData);
-        } catch (error) {
-          console.error("Failed to fetch utility vends:", error);
-          setCreditGenerationData(dummyReports.creditGenerated);
-        }
-      };
-
-      fetchCreditGenerationData();
-    }
-  }, [selectedOrganization]);
-
   const creditTransactions = dummyTransactions.filter(t => t.type === 'credit_purchase');
   const walletTransactions = dummyTransactions.filter(t => t.type === 'wallet_topup');
 
@@ -184,7 +147,7 @@ export default function ReportsPage() {
                 </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={200}>
-                    <BarChart data={creditGenerationData}>
+                    <BarChart data={dummyReports.creditGenerated}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="month" tick={{ fontSize: 12 }} />
                       <YAxis tick={{ fontSize: 12 }} />
@@ -497,7 +460,7 @@ export default function ReportsPage() {
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={creditGenerationData}>
+                  <BarChart data={dummyReports.creditGenerated}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="month" />
                     <YAxis />

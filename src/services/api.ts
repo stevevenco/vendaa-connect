@@ -333,8 +333,17 @@ export const getTransactions = (organizationId: string, page: number = 1, pageSi
   return authApi<PaginatedResponse<Transaction>>(url);
 };
 
+export const getAllTransactions = (organizationId: string): Promise<Transaction[]> => {
+  const url = `/wallet/transactions/${organizationId}/?no_pagination=true`;
+  return authApi<Transaction[]>(url);
+};
+
 export const getUtilityVends = (orgId: string, page: number = 1, pageSize: number = 10): Promise<PaginatedResponse<UtilityVend>> => {
   return authApi<PaginatedResponse<UtilityVend>>(`/organizations/${orgId}/utility-vends/?page=${page}&page_size=${pageSize}`);
+};
+
+export const getAllUtilityVends = (orgId: string): Promise<UtilityVend[]> => {
+  return authApi<UtilityVend[]>(`/organizations/${orgId}/utility-vends/?no_pagination=true`);
 };
 
 // Meter Related Endpoints

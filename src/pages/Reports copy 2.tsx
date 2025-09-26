@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useOrganization } from "@/context/useOrganization";
-import { getAllUtilityVends } from "@/services/api";
-import { UtilityVend } from "@/types";
+import { getAllTransactions, getAllUtilityVends } from "@/services/api";
+import { Transaction, UtilityVend } from "@/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -32,36 +32,42 @@ const COLORS = ['hsl(var(--primary))', 'hsl(var(--accent))', 'hsl(var(--warning)
 export default function ReportsPage() {
   const [activeTab, setActiveTab] = useState("transactions");
   const { selectedOrganization } = useOrganization();
-  const [creditGenerationData, setCreditGenerationData] = useState(dummyReports.creditGenerated);
+  const [totalTransactionsThisMonth, setTotalTransactionsThisMonth] = useState(0);
+  const [engineeringTokensThisMonth, setEngineeringTokensThisMonth] = useState(0);
 
   useEffect(() => {
     if (selectedOrganization) {
-      const fetchCreditGenerationData = async () => {
+      const fetchData = async () => {
         try {
-          const utilityVends: UtilityVend[] = await getAllUtilityVends(selectedOrganization.uuid);
+          const [transactions, utilityVends] = await Promise.all([
+            getAllTransactions(selectedOrganization.uuid),
+            getAllUtilityVends(selectedOrganization.uuid),
+          ]);
+
           const now = new Date();
+          const currentMonth = now.getMonth();
           const currentYear = now.getFullYear();
 
-          const monthlyData = Array.from({ length: 12 }, (_, i) => ({
-            month: new Date(0, i).toLocaleString('default', { month: 'short' }),
-            amount: 0,
-          }));
-
-          utilityVends.forEach(vend => {
-            const vendDate = new Date(vend.created);
-            if (vendDate.getFullYear() === currentYear) {
-              const monthIndex = vendDate.getMonth();
-              monthlyData[monthIndex].amount += parseFloat(vend.amount);
-            }
+          // Process transactions
+          const thisMonthTransactions = transactions.filter(transaction => {
+            const transactionDate = new Date(transaction.created_at);
+            return transactionDate.getMonth() === currentMonth && transactionDate.getFullYear() === currentYear;
           });
-          setCreditGenerationData(monthlyData);
+          setTotalTransactionsThisMonth(thisMonthTransactions.length);
+
+          // Process engineering tokens
+          const thisMonthEngineeringTokens = utilityVends.filter(vend => {
+            const vendDate = new Date(vend.created);
+            return vend.token_type !== 'credit' && vend.token_type !== 'mgtk' && vendDate.getMonth() === currentMonth && vendDate.getFullYear() === currentYear;
+          });
+          setEngineeringTokensThisMonth(thisMonthEngineeringTokens.length);
+
         } catch (error) {
-          console.error("Failed to fetch utility vends:", error);
-          setCreditGenerationData(dummyReports.creditGenerated);
+          console.error("Failed to fetch report data:", error);
         }
       };
 
-      fetchCreditGenerationData();
+      fetchData();
     }
   }, [selectedOrganization]);
 
@@ -110,7 +116,7 @@ export default function ReportsPage() {
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-lg sm:text-2xl font-bold">{dummyTransactions.length}</div>
+            <div className="text-lg sm:text-2xl font-bold">{totalTransactionsThisMonth}</div>
             <p className="text-xs text-muted-foreground">
               This month
             </p>
@@ -123,7 +129,7 @@ export default function ReportsPage() {
             <Wrench className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-lg sm:text-2xl font-bold">42</div>
+            <div className="text-lg sm:text-2xl font-bold">{engineeringTokensThisMonth}</div>
             <p className="text-xs text-muted-foreground">
               Generated this month
             </p>
@@ -184,7 +190,7 @@ export default function ReportsPage() {
                 </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={200}>
-                    <BarChart data={creditGenerationData}>
+                    <BarChart data={dummyReports.creditGenerated}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="month" tick={{ fontSize: 12 }} />
                       <YAxis tick={{ fontSize: 12 }} />
@@ -497,7 +503,7 @@ export default function ReportsPage() {
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={creditGenerationData}>
+                  <BarChart data={dummyReports.creditGenerated}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="month" />
                     <YAxis />
