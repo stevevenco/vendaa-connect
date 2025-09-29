@@ -50,7 +50,8 @@ export const COUNTRY_DATA = () => {
   } else if (env === "staging") {
     return stagingCountriesData;
   } else {
-    return localCountriesData;
+    // return localCountriesData;
+    return stagingCountriesData
   }
 };
 
