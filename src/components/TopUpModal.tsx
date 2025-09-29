@@ -21,7 +21,9 @@ import {
   OnlineCheckoutPaymentOption,
 } from "@/types";
 import { initiateWalletFunding } from "@/services/api";
-import { useAuth } from "@/context/AuthContext";
+// import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/hooks/useAuth";
+
 
 export const TopUpModal = () => {
   const { isModalOpen, closeModal } = useTopUp();
@@ -56,7 +58,8 @@ export const TopUpModal = () => {
         parseFloat(amount)
       );
 
-      if (selectedOrganization.is_sandbox || user?.display_state === "test") {
+      // selectedOrganization.is_sandbox || 
+      if (user?.display_state === "test") {
         setIsSuccessModalOpen(true);
       } else {
         setPaymentOptions(options);

@@ -21,14 +21,15 @@ import { Input } from "@/components/ui/input";
 import { TLoginSchema, LoginSchema } from "@/types";
 import { login as apiLogin } from "@/services/api";
 import { useToast } from "@/components/ui/use-toast";
-import { useAuth } from "@/context/AuthContext";
+// import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/hooks/useAuth";
+
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
   const { login } = useAuth();
-  const from = location.state?.from?.pathname || "/";
 
   const form = useForm<TLoginSchema>({
     resolver: zodResolver(LoginSchema),
@@ -41,12 +42,18 @@ export default function LoginPage() {
   const onSubmit = async (data: TLoginSchema) => {
     try {
       const res = await apiLogin(data);
-      login(res.access, res.refresh);
+      await login(res.access, res.refresh);
       toast({
         title: "Login Successful",
         description: "You have successfully logged in.",
       });
-      navigate(from, { replace: true });
+      const searchParams = new URLSearchParams(location.search);
+      const redirect = searchParams.get("redirect");
+      if (redirect) {
+        navigate(redirect, { replace: true });
+      } else {
+        navigate("/", { replace: true });
+      }
     } catch (error) {
       toast({
         title: "Login Failed",

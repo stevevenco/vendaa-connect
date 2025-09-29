@@ -7,7 +7,9 @@ import {
   getTransactions,
   switchDisplayState,
 } from "@/services/api";
-import { useAuth } from "@/context/AuthContext";
+// import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/hooks/useAuth";
+
 import { OrganizationContext } from "./organizationContext";
 import { OrganizationProviderProps } from "./organizationContext.types";
 

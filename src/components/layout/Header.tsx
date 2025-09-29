@@ -11,14 +11,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/hooks/useAuth";
 import { useOrganization } from "@/context/useOrganization";
 import { Link } from "react-router-dom";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { switchDisplayState } from "@/services/api";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useHeadway } from "@/hooks/useHeadway";
 
 // Truncate utility
@@ -38,17 +38,29 @@ export function Header() {
   } = useOrganization();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isChecked, setIsChecked] = useState(user?.display_state === "live");
+
+  useEffect(() => {
+    if (user) {
+      setIsChecked(user.display_state === "live");
+    }
+  }, [user]);
 
   const handleSwitchChange = async (checked: boolean) => {
     if (!selectedOrganization) return;
     setIsSubmitting(true);
+    setIsChecked(checked); // Optimistically update the UI
     const new_state = checked ? "live" : "test";
     try {
       await switchDisplayState(new_state, selectedOrganization.uuid);
       toast.success(`Switched to ${new_state} mode`);
-      checkAuth();
+      // No need to call checkAuth() immediately, as the optimistic update handles the UI.
+      // The user object will be updated on the next render or when checkAuth is called elsewhere.
+      await checkAuth(); // Refetch user to confirm state
     } catch (error) {
+      console.log(error);
       toast.error("Failed to switch mode");
+      setIsChecked(!checked); // Revert on failure
     } finally {
       setIsSubmitting(false);
     }
@@ -108,7 +120,7 @@ export function Header() {
               </Label>
               <Switch
                 id="display-state-switch"
-                checked={user.display_state === "live"}
+                checked={isChecked}
                 onCheckedChange={handleSwitchChange}
                 disabled={isSubmitting}
               />

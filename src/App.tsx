@@ -1,7 +1,6 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { OrganizationProvider } from "./context/OrganizationContext.tsx";
 import { TopUpProvider } from "./context/TopUpProvider";
@@ -27,57 +26,53 @@ import ResetPasswordPage from "./pages/ResetPassword";
 import VerifyAccountPage from "./pages/VerifyAccount";
 import VerifyOrganization from "./pages/VerifyOrganization";
 
-const queryClient = new QueryClient();
-
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <TopUpProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/signup" element={<SignupPage />} />
-            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-            <Route path="/verify-otp" element={<VerifyOtpPage />} />
-            <Route path="/verify-account" element={<VerifyAccountPage />} />
-            <Route path="/reset-password" element={<ResetPasswordPage />} />
-            <Route path="/accept-invite/:token" element={<AcceptInvitePage />} />
+  <TooltipProvider>
+    <Toaster />
+    <Sonner />
+    <TopUpProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignupPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/verify-otp" element={<VerifyOtpPage />} />
+          <Route path="/verify-account" element={<VerifyAccountPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/accept-invite/:token" element={<AcceptInvitePage />} />
+          <Route
+            element={
+              <OrganizationProvider>
+                <ProtectedRoute />
+              </OrganizationProvider>
+            }
+          >
             <Route
-              element={
-                <OrganizationProvider>
-                  <ProtectedRoute />
-                </OrganizationProvider>
-              }
-            >
+              path="/create-organization"
+              element={<CreateOrganizationPage />}
+            />
+            <Route path="/" element={<AppLayout />}>
+              <Route index element={<Dashboard />} />
+              <Route path="wallet" element={<WalletPage />} />
+              <Route path="meters" element={<MetersPage />} />
+              <Route path="meters/:meterId" element={<MeterDetailsPage />} />
+              <Route path="vending" element={<VendingPage />} />
+              <Route path="reports" element={<ReportsPage />} />
+              <Route path="settings" element={<SettingsPage />} />
+              <Route path="organization" element={<OrganizationPage />} />
+              <Route path="developer" element={<DeveloperPage />} />
               <Route
-                path="/create-organization"
-                element={<CreateOrganizationPage />}
+                path="verify-organization"
+                element={<VerifyOrganization />}
               />
-              <Route path="/" element={<AppLayout />}>
-                <Route index element={<Dashboard />} />
-                <Route path="wallet" element={<WalletPage />} />
-                <Route path="meters" element={<MetersPage />} />
-                <Route path="meters/:meterId" element={<MeterDetailsPage />} />
-                <Route path="vending" element={<VendingPage />} />
-                <Route path="reports" element={<ReportsPage />} />
-                <Route path="settings" element={<SettingsPage />} />
-                <Route path="organization" element={<OrganizationPage />} />
-                <Route path="developer" element={<DeveloperPage />} />
-                <Route
-                  path="verify-organization"
-                  element={<VerifyOrganization />}
-                />
-              </Route>
             </Route>
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TopUpProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
+          </Route>
+          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </BrowserRouter>
+    </TopUpProvider>
+  </TooltipProvider>
 );
 
 export default App;

@@ -1,19 +1,19 @@
 import { useState, useEffect } from "react";
 import { useOrganization } from "@/context/useOrganization";
-import { getAllTransactions, getAllUtilityVends, getUtilityVends, getTransactions } from "@/services/api";
-import { PaginatedResponse, UtilityVend, Transaction } from "@/types";
+import { getAllUtilityVends, getUtilityVends } from "@/services/api";
+import { UtilityVend } from "@/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
 } from "@/components/ui/table";
 import {
   Pagination,
@@ -23,16 +23,14 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { VendingDetailsModal } from "@/components/VendingDetailsModal";
-import { WalletTransactionDetailsModal } from "@/components/WalletTransactionDetailsModal";
-import {
-  FileText,
-  Download,
+import { 
+  FileText, 
+  Download, 
   Filter,
   BarChart3,
   Activity,
   Shield,
-  Wrench,
-  DollarSign
+  Wrench
 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { dummyTransactions, dummyReports } from "@/data/dummyData";
@@ -48,68 +46,6 @@ export default function ReportsPage() {
     { name: 'Water', value: 0, color: 'hsl(var(--accent))' },
     { name: 'Gas', value: 0, color: 'hsl(var(--warning))' },
   ]);
-  const [totalTransactionsThisMonth, setTotalTransactionsThisMonth] = useState(0);
-  const [engineeringTokensThisMonth, setEngineeringTokensThisMonth] = useState(0);
-  const [managementTokensThisMonth, setManagementTokensThisMonth] = useState(0);
-  const [creditTokensThisMonth, setCreditTokensThisMonth] = useState(0);
-
-  // New state for wallet transactions
-  const [walletTransactions, setWalletTransactions] = useState<PaginatedResponse<Transaction> | null>(null);
-  const [isWalletTransactionsLoading, setIsWalletTransactionsLoading] = useState(true);
-  const [walletTransactionsError, setWalletTransactionsError] = useState<string | null>(null);
-  const [currentWalletTransactionPage, setCurrentWalletTransactionPage] = useState(1);
-  const [selectedTransactionId, setSelectedTransactionId] = useState<string | null>(null);
-  const [isWalletDetailsModalOpen, setIsWalletDetailsModalOpen] = useState(false);
-
-  useEffect(() => {
-    if (selectedOrganization) {
-      const fetchData = async () => {
-        try {
-          const [transactions, utilityVends] = await Promise.all([
-            getAllTransactions(selectedOrganization.uuid),
-            getAllUtilityVends(selectedOrganization.uuid),
-          ]);
-
-          const now = new Date();
-          const currentMonth = now.getMonth();
-          const currentYear = now.getFullYear();
-
-          // Process transactions
-          const thisMonthTransactions = transactions.filter(transaction => {
-            const transactionDate = new Date(transaction.created_at);
-            return transactionDate.getMonth() === currentMonth && transactionDate.getFullYear() === currentYear;
-          });
-          setTotalTransactionsThisMonth(thisMonthTransactions.length);
-
-          // Process engineering tokens
-          const thisMonthEngineeringTokens = utilityVends.filter(vend => {
-            const vendDate = new Date(vend.created);
-            return vend.token_type !== 'credit' && vend.token_type !== 'mgtk' && vendDate.getMonth() === currentMonth && vendDate.getFullYear() === currentYear;
-          });
-          setEngineeringTokensThisMonth(thisMonthEngineeringTokens.length);
-
-          // Process management tokens
-          const thisMonthManagementTokens = utilityVends.filter(vend => {
-            const vendDate = new Date(vend.created);
-            return vend.token_type === 'mgtk' && vendDate.getMonth() === currentMonth && vendDate.getFullYear() === currentYear;
-          });
-          setManagementTokensThisMonth(thisMonthManagementTokens.length);
-
-          // Process credit tokens
-          const thisMonthCreditTokens = utilityVends.filter(vend => {
-            const vendDate = new Date(vend.created);
-            return vend.token_type === 'credit' && vendDate.getMonth() === currentMonth && vendDate.getFullYear() === currentYear;
-          });
-          setCreditTokensThisMonth(thisMonthCreditTokens.length);
-
-        } catch (error) {
-          console.error("Failed to fetch report data:", error);
-        }
-      };
-
-      fetchData();
-    }
-  }, [selectedOrganization]);
 
   useEffect(() => {
     if (selectedOrganization) {
@@ -190,26 +126,8 @@ export default function ReportsPage() {
   const [managementTokensError, setManagementTokensError] = useState<string | null>(null);
   const [currentManagementTokensPage, setCurrentManagementTokensPage] = useState(1);
 
-  useEffect(() => {
-    if (selectedOrganization) {
-      const fetchWalletTransactions = async () => {
-        setIsWalletTransactionsLoading(true);
-        setWalletTransactionsError(null);
-        try {
-          const data = await getTransactions(selectedOrganization.uuid, currentWalletTransactionPage, 10);
-          setWalletTransactions(data);
-        } catch (error) {
-          console.error("Failed to fetch wallet transactions:", error);
-          setWalletTransactionsError("Failed to load wallet transactions.");
-        } finally {
-          setIsWalletTransactionsLoading(false);
-        }
-      };
 
-      fetchWalletTransactions();
-    }
-  }, [selectedOrganization, currentWalletTransactionPage]);
-
+  const walletTransactions = dummyTransactions.filter(t => t.type === 'wallet_topup');
 
   useEffect(() => {
     if (selectedOrganization) {
@@ -279,9 +197,9 @@ export default function ReportsPage() {
 
   const tabOptions = [
     { value: "transactions", label: "Transactions" },
-    { value: "engineering", label: "Engineering Tokens" },
-    { value: "management", label: "Management Tokens" },
-    { value: "credit", label: "Credit Tokens" },
+    { value: "tokens", label: "Engineering Tokens" },
+    { value: "remote", label: "Management Tokens" },
+    { value: "security", label: "Security" },
   ];
 
   return (
@@ -293,8 +211,7 @@ export default function ReportsPage() {
             Comprehensive reports and analytics for your utility operations.
           </p>
         </div>
-        {/* Future Implementation */}
-        {/* <div className="flex gap-2">
+        <div className="flex gap-2">
           <Button variant="outline" size="sm">
             <Filter className="mr-2 h-6 w-4" />
             Filters
@@ -303,7 +220,7 @@ export default function ReportsPage() {
             <Download className="mr-2 h-4 w-4" />
             Export
           </Button>
-        </div> */}
+        </div>
       </div>
 
       {/* Overview Cards */}
@@ -314,9 +231,9 @@ export default function ReportsPage() {
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-lg sm:text-2xl font-bold">{totalTransactionsThisMonth}</div>
+            <div className="text-lg sm:text-2xl font-bold">{dummyTransactions.length}</div>
             <p className="text-xs text-muted-foreground">
-              Wallet transactions
+              This month
             </p>
           </CardContent>
         </Card>
@@ -327,7 +244,7 @@ export default function ReportsPage() {
             <Wrench className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-lg sm:text-2xl font-bold">{engineeringTokensThisMonth}</div>
+            <div className="text-lg sm:text-2xl font-bold">42</div>
             <p className="text-xs text-muted-foreground">
               Generated this month
             </p>
@@ -340,7 +257,7 @@ export default function ReportsPage() {
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-lg sm:text-2xl font-bold">{managementTokensThisMonth}</div>
+            <div className="text-lg sm:text-2xl font-bold">156</div>
             <p className="text-xs text-muted-foreground">
               Actions performed
             </p>
@@ -349,13 +266,13 @@ export default function ReportsPage() {
 
         <Card className="min-w-[160px] snap-start md:min-w-0">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs sm:text-sm font-medium">Credit Tokens</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-xs sm:text-sm font-medium">Login Sessions</CardTitle>
+            <Shield className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-lg sm:text-2xl font-bold">{creditTokensThisMonth}</div>
+            <div className="text-lg sm:text-2xl font-bold">23</div>
             <p className="text-xs text-muted-foreground">
-              Generated this month
+              This week
             </p>
           </CardContent>
         </Card>
@@ -392,7 +309,7 @@ export default function ReportsPage() {
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="month" tick={{ fontSize: 12 }} />
                       <YAxis tick={{ fontSize: 12 }} />
-                      <Tooltip
+                      <Tooltip 
                         formatter={(value: number) => [`₦${value.toLocaleString()}`, 'Amount']}
                       />
                       <Bar dataKey="amount" fill="hsl(var(--primary))" />
@@ -405,7 +322,7 @@ export default function ReportsPage() {
                 <CardHeader>
                   <CardTitle className="text-base sm:text-lg">Utility Distribution</CardTitle>
                   <CardDescription className="text-xs sm:text-sm">
-                    Token purchases by utility type
+                    Credit purchases by utility type
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -434,9 +351,9 @@ export default function ReportsPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-base sm:text-lg">All Wallet Transactions</CardTitle>
+                <CardTitle className="text-base sm:text-lg">Recent Credit Transactions</CardTitle>
                 <CardDescription className="text-xs sm:text-sm">
-                  A comprehensive log of all wallet transactions
+                  Latest utility credit purchases with transaction details
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -444,53 +361,53 @@ export default function ReportsPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead className="text-xs sm:text-sm">Date/Time</TableHead>
-                      <TableHead className="text-xs sm:text-sm">Title</TableHead>
+                      <TableHead className="text-xs sm:text-sm">Meter Number</TableHead>
                       <TableHead className="text-xs sm:text-sm">Amount</TableHead>
-                      <TableHead className="text-xs sm:text-sm">Status</TableHead>
+                      <TableHead className="text-xs sm:text-sm">Token</TableHead>
+                      <TableHead className="text-xs sm:text-sm">Generated By</TableHead>
                       <TableHead className="text-right text-xs sm:text-sm">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {isWalletTransactionsLoading ? (
+                    {isTransactionsLoading ? (
                       <TableRow>
                         <TableCell colSpan={5} className="text-center">Loading transactions...</TableCell>
                       </TableRow>
-                    ) : walletTransactionsError ? (
+                    ) : transactionsError ? (
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center text-red-500">{walletTransactionsError}</TableCell>
+                        <TableCell colSpan={5} className="text-center text-red-500">{transactionsError}</TableCell>
                       </TableRow>
-                    ) : walletTransactions?.results?.length === 0 ? (
+                    ) : creditTransactions?.results?.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center">No wallet transactions found.</TableCell>
+                        <TableCell colSpan={5} className="text-center">No credit transactions found.</TableCell>
                       </TableRow>
                     ) : (
-                      walletTransactions?.results?.map((transaction) => (
-                        <TableRow key={transaction.transaction_id}>
+                      creditTransactions?.results?.map((transaction) => (
+                        <TableRow key={transaction.uuid}>
                           <TableCell className="text-xs sm:text-sm">
                             <div>
                               <div className="font-medium">
-                                {new Date(transaction.created_at).toLocaleDateString()}
+                                {new Date(transaction.created).toLocaleDateString()}
                               </div>
                               <div className="text-xs text-muted-foreground">
-                                {new Date(transaction.created_at).toLocaleTimeString()}
+                                {new Date(transaction.created).toLocaleTimeString()}
                               </div>
                             </div>
                           </TableCell>
-                          <TableCell className="text-xs sm:text-sm">{transaction.title}</TableCell>
+                          <TableCell className="text-xs sm:text-sm">{transaction.meter_number}</TableCell>
                           <TableCell className="text-xs sm:text-sm">
                             <Badge variant="secondary">
                               ₦{parseFloat(transaction.amount).toLocaleString()}
                             </Badge>
                           </TableCell>
-                          <TableCell className="text-xs sm:text-sm">
-                            <Badge variant={transaction.status === 'success' ? 'success' : ''}>
-                              {transaction.status}
-                            </Badge>
+                          <TableCell className="font-mono text-xs">
+                            {transaction.token[0]}
                           </TableCell>
+                           <TableCell className="text-xs sm:text-sm">{transaction.initiated_by.substring(0, 8)}...</TableCell>
                           <TableCell className="text-right">
                             <Button variant="outline" size="sm" onClick={() => {
-                              setSelectedTransactionId(transaction.transaction_id);
-                              setIsWalletDetailsModalOpen(true);
+                              setSelectedVend(transaction);
+                              setIsDetailsModalOpen(true);
                             }}>
                               View
                             </Button>
@@ -500,7 +417,7 @@ export default function ReportsPage() {
                     )}
                   </TableBody>
                 </Table>
-                {walletTransactions && walletTransactions.total_pages > 1 && (
+                 {creditTransactions && creditTransactions.total_pages > 1 && (
                   <div className="flex justify-center pt-4">
                     <Pagination>
                       <PaginationContent>
@@ -509,14 +426,14 @@ export default function ReportsPage() {
                             href="#"
                             onClick={(e) => {
                               e.preventDefault();
-                              setCurrentWalletTransactionPage(prev => Math.max(prev - 1, 1));
+                              setCurrentTransactionPage(prev => Math.max(prev - 1, 1));
                             }}
-                            className={!walletTransactions.links.previous ? "pointer-events-none opacity-50" : ""}
+                            className={!creditTransactions.links.previous ? "pointer-events-none opacity-50" : ""}
                           />
                         </PaginationItem>
                         <PaginationItem>
                           <span className="text-sm font-medium">
-                            Page {currentWalletTransactionPage} of {walletTransactions.total_pages}
+                            Page {currentTransactionPage} of {creditTransactions.total_pages}
                           </span>
                         </PaginationItem>
                         <PaginationItem>
@@ -524,9 +441,9 @@ export default function ReportsPage() {
                             href="#"
                             onClick={(e) => {
                               e.preventDefault();
-                              setCurrentWalletTransactionPage(prev => Math.min(prev + 1, walletTransactions.total_pages));
+                              setCurrentTransactionPage(prev => Math.min(prev + 1, creditTransactions.total_pages));
                             }}
-                            className={!walletTransactions.links.next ? "pointer-events-none opacity-50" : ""}
+                            className={!creditTransactions.links.next ? "pointer-events-none opacity-50" : ""}
                           />
                         </PaginationItem>
                       </PaginationContent>
@@ -538,7 +455,7 @@ export default function ReportsPage() {
           </div>
         )}
 
-        {activeTab === "engineering" && (
+        {activeTab === "tokens" && (
           <Card>
             <CardHeader>
               <CardTitle className="text-base sm:text-lg">Engineering Tokens Report</CardTitle>
@@ -638,7 +555,7 @@ export default function ReportsPage() {
           </Card>
         )}
 
-        {activeTab === "management" && (
+        {activeTab === "remote" && (
           <Card>
             <CardHeader>
               <CardTitle className="text-base sm:text-lg">Management Token</CardTitle>
@@ -744,109 +661,77 @@ export default function ReportsPage() {
           </Card>
         )}
 
-        {activeTab === "credit" && (
+        {activeTab === "security" && (
           <Card>
             <CardHeader>
-              <CardTitle className="text-base sm:text-lg">Credit Tokens Generated</CardTitle>
+              <CardTitle className="text-base sm:text-lg">User Login Activity</CardTitle>
               <CardDescription className="text-xs sm:text-sm">
-                Log of all credit tokens generated for utility purchases
+                Security log of user authentication and session activity
               </CardDescription>
             </CardHeader>
             <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="text-xs sm:text-sm">Date/Time</TableHead>
-                      <TableHead className="text-xs sm:text-sm">Meter Number</TableHead>
-                      <TableHead className="text-xs sm:text-sm">Amount</TableHead>
-                      <TableHead className="text-xs sm:text-sm">Token</TableHead>
-                      {/* <TableHead className="text-xs sm:text-sm">Generated By</TableHead> */}
-                      <TableHead className="text-right text-xs sm:text-sm">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {isTransactionsLoading ? (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center">Loading transactions...</TableCell>
-                      </TableRow>
-                    ) : transactionsError ? (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center text-red-500">{transactionsError}</TableCell>
-                      </TableRow>
-                    ) : creditTransactions?.results?.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center">No credit transactions found.</TableCell>
-                      </TableRow>
-                    ) : (
-                      creditTransactions?.results?.map((transaction) => (
-                        <TableRow key={transaction.uuid}>
-                          <TableCell className="text-xs sm:text-sm">
-                            <div>
-                              <div className="font-medium">
-                                {new Date(transaction.created).toLocaleDateString()}
-                              </div>
-                              <div className="text-xs text-muted-foreground">
-                                {new Date(transaction.created).toLocaleTimeString()}
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-xs sm:text-sm">{transaction.meter_number}</TableCell>
-                          <TableCell className="text-xs sm:text-sm">
-                            <Badge variant="secondary">
-                              ₦{parseFloat(transaction.amount).toLocaleString()}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="font-mono text-xs">
-                            {transaction.token[0]}
-                          </TableCell>
-                           {/* <TableCell className="text-xs sm:text-sm">{transaction.initiated_by.substring(0, 8)}...</TableCell> */}
-                          <TableCell className="text-right">
-                            <Button variant="outline" size="sm" onClick={() => {
-                              setSelectedVend(transaction);
-                              setIsDetailsModalOpen(true);
-                            }}>
-                              View
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-                 {creditTransactions && creditTransactions.total_pages > 1 && (
-                  <div className="flex justify-center pt-4">
-                    <Pagination>
-                      <PaginationContent>
-                        <PaginationItem>
-                          <PaginationPrevious
-                            href="#"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              setCurrentTransactionPage(prev => Math.max(prev - 1, 1));
-                            }}
-                            className={!creditTransactions.links.previous ? "pointer-events-none opacity-50" : ""}
-                          />
-                        </PaginationItem>
-                        <PaginationItem>
-                          <span className="text-sm font-medium">
-                            Page {currentTransactionPage} of {creditTransactions.total_pages}
-                          </span>
-                        </PaginationItem>
-                        <PaginationItem>
-                          <PaginationNext
-                            href="#"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              setCurrentTransactionPage(prev => Math.min(prev + 1, creditTransactions.total_pages));
-                            }}
-                            className={!creditTransactions.links.next ? "pointer-events-none opacity-50" : ""}
-                          />
-                        </PaginationItem>
-                      </PaginationContent>
-                    </Pagination>
-                  </div>
-                )}
-              </CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-xs sm:text-sm">Date/Time</TableHead>
+                    <TableHead className="text-xs sm:text-sm">User</TableHead>
+                    <TableHead className="text-xs sm:text-sm">IP Address</TableHead>
+                    <TableHead className="text-xs sm:text-sm">Status</TableHead>
+                    <TableHead className="text-xs sm:text-sm">Location</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <TableRow>
+                    <TableCell className="text-xs sm:text-sm">
+                      <div>
+                        <div className="font-medium">2024-01-15</div>
+                        <div className="text-xs text-muted-foreground">8:30 AM</div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-xs sm:text-sm">john.doe@technova.com</TableCell>
+                    <TableCell className="text-xs sm:text-sm">192.168.1.100</TableCell>
+                    <TableCell className="text-xs sm:text-sm">
+                      <Badge variant="outline" className="text-green-600 border-green-600">
+                        Success
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-xs sm:text-sm">Lagos, Nigeria</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell className="text-xs sm:text-sm">
+                      <div>
+                        <div className="font-medium">2024-01-14</div>
+                        <div className="text-xs text-muted-foreground">4:45 PM</div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-xs sm:text-sm">sarah.smith@technova.com</TableCell>
+                    <TableCell className="text-xs sm:text-sm">192.168.1.105</TableCell>
+                    <TableCell className="text-xs sm:text-sm">
+                      <Badge variant="outline" className="text-green-600 border-green-600">
+                        Success
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-xs sm:text-sm">Abuja, Nigeria</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell className="text-xs sm:text-sm">
+                      <div>
+                        <div className="font-medium">2024-01-13</div>
+                        <div className="text-xs text-muted-foreground">11:20 AM</div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-xs sm:text-sm">unknown@email.com</TableCell>
+                    <TableCell className="text-xs sm:text-sm">203.45.67.89</TableCell>
+                    <TableCell className="text-xs sm:text-sm">
+                      <Badge variant="destructive">
+                        Failed
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-xs sm:text-sm">Unknown</TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </CardContent>
           </Card>
         )}
       </div>
@@ -855,9 +740,9 @@ export default function ReportsPage() {
       <Tabs defaultValue="transactions" className="hidden md:block space-y-4" onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="transactions">Transactions</TabsTrigger>
-          <TabsTrigger value="engineering">Engineering Tokens</TabsTrigger>
-          <TabsTrigger value="management">Management Tokens</TabsTrigger>
-          <TabsTrigger value="credit">Credit Tokens</TabsTrigger>
+          <TabsTrigger value="tokens">Engineering Tokens</TabsTrigger>
+          <TabsTrigger value="remote">Management Tokens</TabsTrigger>
+          <TabsTrigger value="security">Security</TabsTrigger>
         </TabsList>
 
         <TabsContent value="transactions" className="space-y-4">
@@ -873,7 +758,7 @@ export default function ReportsPage() {
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="month" />
                     <YAxis />
-                    <Tooltip
+                    <Tooltip 
                       formatter={(value: number) => [`₦${value.toLocaleString()}`, 'Amount']}
                     />
                     <Bar dataKey="amount" fill="hsl(var(--primary))" />
@@ -885,7 +770,7 @@ export default function ReportsPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Utility Distribution</CardTitle>
-                <CardDescription>Token purchases by utility type</CardDescription>
+                <CardDescription>Credit purchases by utility type</CardDescription>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
@@ -913,9 +798,9 @@ export default function ReportsPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>All Wallet Transactions</CardTitle>
+              <CardTitle>Recent Credit Transactions</CardTitle>
               <CardDescription>
-                A comprehensive log of all wallet transactions
+                Latest utility credit purchases with transaction details
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -923,55 +808,53 @@ export default function ReportsPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Date/Time</TableHead>
-                    <TableHead>Title</TableHead>
-                    <TableHead>Event</TableHead>
+                    <TableHead>Meter Number</TableHead>
                     <TableHead>Amount</TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead>Token</TableHead>
+                    <TableHead>Generated By</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {isWalletTransactionsLoading ? (
+                  {isTransactionsLoading ? (
                     <TableRow>
                       <TableCell colSpan={6} className="text-center">Loading transactions...</TableCell>
                     </TableRow>
-                  ) : walletTransactionsError ? (
+                  ) : transactionsError ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center text-red-500">{walletTransactionsError}</TableCell>
+                      <TableCell colSpan={6} className="text-center text-red-500">{transactionsError}</TableCell>
                     </TableRow>
-                  ) : walletTransactions?.results?.length === 0 ? (
+                  ) : creditTransactions?.results?.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center">No wallet transactions found.</TableCell>
+                      <TableCell colSpan={6} className="text-center">No credit transactions found.</TableCell>
                     </TableRow>
                   ) : (
-                    walletTransactions?.results?.map((transaction) => (
-                      <TableRow key={transaction.transaction_id}>
+                    creditTransactions?.results?.map((transaction) => (
+                      <TableRow key={transaction.uuid}>
                         <TableCell>
                           <div>
                             <div className="font-medium">
-                              {new Date(transaction.created_at).toLocaleDateString()}
+                              {new Date(transaction.created).toLocaleDateString()}
                             </div>
                             <div className="text-sm text-muted-foreground">
-                              {new Date(transaction.created_at).toLocaleTimeString()}
+                              {new Date(transaction.created).toLocaleTimeString()}
                             </div>
                           </div>
                         </TableCell>
-                        <TableCell>{transaction.title}</TableCell>
-                        <TableCell>{transaction.event}</TableCell>
+                        <TableCell>{transaction.meter_number}</TableCell>
                         <TableCell>
                           <Badge variant="secondary">
                             ₦{parseFloat(transaction.amount).toLocaleString()}
                           </Badge>
                         </TableCell>
-                        <TableCell>
-                          <Badge variant={transaction.status === 'success' ? 'success' : ''}>
-                            {transaction.status}
-                          </Badge>
+                        <TableCell className="font-mono text-sm">
+                          {transaction.token[0]}
                         </TableCell>
+                        <TableCell>{transaction.initiated_by.substring(0, 8)}...</TableCell>
                         <TableCell className="text-right">
                           <Button variant="outline" size="sm" onClick={() => {
-                            setSelectedTransactionId(transaction.transaction_id);
-                            setIsWalletDetailsModalOpen(true);
+                            setSelectedVend(transaction);
+                            setIsDetailsModalOpen(true);
                           }}>
                             View
                           </Button>
@@ -981,7 +864,7 @@ export default function ReportsPage() {
                   )}
                 </TableBody>
               </Table>
-              {walletTransactions && walletTransactions.total_pages > 1 && (
+              {creditTransactions && creditTransactions.total_pages > 1 && (
                 <div className="flex justify-center pt-4">
                   <Pagination>
                     <PaginationContent>
@@ -990,14 +873,14 @@ export default function ReportsPage() {
                           href="#"
                           onClick={(e) => {
                             e.preventDefault();
-                            setCurrentWalletTransactionPage(prev => Math.max(prev - 1, 1));
+                            setCurrentTransactionPage(prev => Math.max(prev - 1, 1));
                           }}
-                          className={!walletTransactions.links.previous ? "pointer-events-none opacity-50" : ""}
+                          className={!creditTransactions.links.previous ? "pointer-events-none opacity-50" : ""}
                         />
                       </PaginationItem>
                       <PaginationItem>
                         <span className="text-sm font-medium">
-                          Page {currentWalletTransactionPage} of {walletTransactions.total_pages}
+                          Page {currentTransactionPage} of {creditTransactions.total_pages}
                         </span>
                       </PaginationItem>
                       <PaginationItem>
@@ -1005,9 +888,9 @@ export default function ReportsPage() {
                           href="#"
                           onClick={(e) => {
                             e.preventDefault();
-                            setCurrentWalletTransactionPage(prev => Math.min(prev + 1, walletTransactions.total_pages));
+                            setCurrentTransactionPage(prev => Math.min(prev + 1, creditTransactions.total_pages));
                           }}
-                          className={!walletTransactions.links.next ? "pointer-events-none opacity-50" : ""}
+                          className={!creditTransactions.links.next ? "pointer-events-none opacity-50" : ""}
                         />
                       </PaginationItem>
                     </PaginationContent>
@@ -1018,7 +901,7 @@ export default function ReportsPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="engineering" className="space-y-4">
+        <TabsContent value="tokens" className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle>Engineering Tokens Report</CardTitle>
@@ -1118,7 +1001,7 @@ export default function ReportsPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="management" className="space-y-4">
+        <TabsContent value="remote" className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle>Management Tokens</CardTitle>
@@ -1224,109 +1107,77 @@ export default function ReportsPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="credit" className="space-y-4">
+        <TabsContent value="security" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Credit Tokens Generated</CardTitle>
+              <CardTitle>User Login Activity</CardTitle>
               <CardDescription>
-                Log of all credit tokens generated for utility purchases
+                Security log of user authentication and session activity
               </CardDescription>
             </CardHeader>
             <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="text-xs sm:text-sm">Date/Time</TableHead>
-                      <TableHead className="text-xs sm:text-sm">Meter Number</TableHead>
-                      <TableHead className="text-xs sm:text-sm">Amount</TableHead>
-                      <TableHead className="text-xs sm:text-sm">Token</TableHead>
-                      {/* <TableHead className="text-xs sm:text-sm">Generated By</TableHead> */}
-                      <TableHead className="text-right text-xs sm:text-sm">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {isTransactionsLoading ? (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center">Loading transactions...</TableCell>
-                      </TableRow>
-                    ) : transactionsError ? (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center text-red-500">{transactionsError}</TableCell>
-                      </TableRow>
-                    ) : creditTransactions?.results?.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center">No credit transactions found.</TableCell>
-                      </TableRow>
-                    ) : (
-                      creditTransactions?.results?.map((transaction) => (
-                        <TableRow key={transaction.uuid}>
-                          <TableCell className="text-xs sm:text-sm">
-                            <div>
-                              <div className="font-medium">
-                                {new Date(transaction.created).toLocaleDateString()}
-                              </div>
-                              <div className="text-xs text-muted-foreground">
-                                {new Date(transaction.created).toLocaleTimeString()}
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-xs sm:text-sm">{transaction.meter_number}</TableCell>
-                          <TableCell className="text-xs sm:text-sm">
-                            <Badge variant="secondary">
-                              ₦{parseFloat(transaction.amount).toLocaleString()}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="font-mono text-xs">
-                            {transaction.token[0]}
-                          </TableCell>
-                           {/* <TableCell className="text-xs sm:text-sm">{transaction.initiated_by.substring(0, 8)}...</TableCell> */}
-                          <TableCell className="text-right">
-                            <Button variant="outline" size="sm" onClick={() => {
-                              setSelectedVend(transaction);
-                              setIsDetailsModalOpen(true);
-                            }}>
-                              View
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-                 {creditTransactions && creditTransactions.total_pages > 1 && (
-                  <div className="flex justify-center pt-4">
-                    <Pagination>
-                      <PaginationContent>
-                        <PaginationItem>
-                          <PaginationPrevious
-                            href="#"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              setCurrentTransactionPage(prev => Math.max(prev - 1, 1));
-                            }}
-                            className={!creditTransactions.links.previous ? "pointer-events-none opacity-50" : ""}
-                          />
-                        </PaginationItem>
-                        <PaginationItem>
-                          <span className="text-sm font-medium">
-                            Page {currentTransactionPage} of {creditTransactions.total_pages}
-                          </span>
-                        </PaginationItem>
-                        <PaginationItem>
-                          <PaginationNext
-                            href="#"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              setCurrentTransactionPage(prev => Math.min(prev + 1, creditTransactions.total_pages));
-                            }}
-                            className={!creditTransactions.links.next ? "pointer-events-none opacity-50" : ""}
-                          />
-                        </PaginationItem>
-                      </PaginationContent>
-                    </Pagination>
-                  </div>
-                )}
-              </CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date/Time</TableHead>
+                    <TableHead>User</TableHead>
+                    <TableHead>IP Address</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Location</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <TableRow>
+                    <TableCell>
+                      <div>
+                        <div className="font-medium">2024-01-15</div>
+                        <div className="text-sm text-muted-foreground">8:30 AM</div>
+                      </div>
+                    </TableCell>
+                    <TableCell>john.doe@technova.com</TableCell>
+                    <TableCell>192.168.1.100</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-green-600 border-green-600">
+                        Success
+                      </Badge>
+                    </TableCell>
+                    <TableCell>Lagos, Nigeria</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>
+                      <div>
+                        <div className="font-medium">2024-01-14</div>
+                        <div className="text-sm text-muted-foreground">4:45 PM</div>
+                      </div>
+                    </TableCell>
+                    <TableCell>sarah.smith@technova.com</TableCell>
+                    <TableCell>192.168.1.105</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-green-600 border-green-600">
+                        Success
+                      </Badge>
+                    </TableCell>
+                    <TableCell>Abuja, Nigeria</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>
+                      <div>
+                        <div className="font-medium">2024-01-13</div>
+                        <div className="text-sm text-muted-foreground">11:20 AM</div>
+                      </div>
+                    </TableCell>
+                    <TableCell>unknown@email.com</TableCell>
+                    <TableCell>203.45.67.89</TableCell>
+                    <TableCell>
+                      <Badge variant="destructive">
+                        Failed
+                      </Badge>
+                    </TableCell>
+                    <TableCell>Unknown</TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
@@ -1338,16 +1189,6 @@ export default function ReportsPage() {
           onClose={() => {
             setIsDetailsModalOpen(false);
             setSelectedVend(null);
-          }}
-        />
-      )}
-      {selectedTransactionId && (
-        <WalletTransactionDetailsModal
-          transactionId={selectedTransactionId}
-          isOpen={isWalletDetailsModalOpen}
-          onClose={() => {
-            setIsWalletDetailsModalOpen(false);
-            setSelectedTransactionId(null);
           }}
         />
       )}

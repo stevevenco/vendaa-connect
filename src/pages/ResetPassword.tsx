@@ -1,3 +1,4 @@
+import * as z from "zod";
 import {
   Card,
   CardContent,
@@ -32,12 +33,9 @@ export default function ResetPasswordPage() {
   const location = useLocation();
   const { toast } = useToast();
 
-  // In a real app, you might want to get the email from the URL query params
-  // for better user experience, e.g., if the user refreshes the page.
   const email = location.state?.email || new URLSearchParams(location.search).get('email');
 
   if (!email) {
-    // Redirect to forgot password if email is not present
     navigate("/forgot-password");
     return null;
   }

@@ -51,8 +51,8 @@ import {
   Loader2
 } from "lucide-react";
 import { useOrganizations } from "@/hooks/useOrganizations";
-import { getMeters, getMetersNoPagination, createMeter, deleteMeter, ApiError } from "@/services/api";
-import { Meter, CreateMeterSchema, TCreateMeterSchema, PaginatedResponse, NonPaginatedResponse } from "@/types";
+import { getMeters, createMeter, deleteMeter, ApiError } from "@/services/api";
+import { Meter, CreateMeterSchema, TCreateMeterSchema, PaginatedResponse } from "@/types";
 import { useToast } from "@/components/ui/use-toast";
 import {
   AlertDialog,
@@ -65,21 +65,19 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { PhoneInput } from "@/components/ui/phone-input";
-import countries from "@/data/country_phone_codes.json";
+import countryToPhoneCode from "@/data/country_to_phone_code.json";
 
 export default function MetersPage() {
   const { selectedOrganization } = useOrganizations();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [metersResponse, setMetersResponse] = useState<PaginatedResponse<Meter> | null>(null);
-  const [metersNoPaginationResponse, setMetersNoPaginationResponse] = useState<Meter[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState("list");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const [country, setCountry] = useState({ name: "", code: "" });
 
 
   const [meterToDelete, setMeterToDelete] = useState<Meter | null>(null);
@@ -101,35 +99,6 @@ export default function MetersPage() {
     }
   }, [selectedOrganization]);
 
-  const fetchMetersNoPagination = useCallback(async () => {
-    if (!selectedOrganization) return;
-    setIsLoading(true);
-    setError(null);
-    try {
-      const data = await getMetersNoPagination(selectedOrganization.uuid);
-      console.log('Fetched meters (no pagination):', data); // Debug log to check fetched data
-      setMetersNoPaginationResponse(data);
-    } catch (err) {
-      setError("Failed to fetch meters.");
-      console.error(err);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [selectedOrganization]);
-
-  useEffect(() => {
-    if (selectedOrganization) {
-      fetchMeters(currentPage, pageSize);
-      fetchMetersNoPagination();
-    }
-  }, [selectedOrganization, currentPage, pageSize, fetchMeters, fetchMetersNoPagination]);
-
-  useEffect(() => {
-    if (selectedOrganization) {
-      fetchMetersNoPagination();
-    }
-  }, [selectedOrganization, fetchMetersNoPagination]);
-
   useEffect(() => {
     if (selectedOrganization) {
       fetchMeters(currentPage, pageSize);
@@ -142,7 +111,7 @@ export default function MetersPage() {
       customer_name: "",
       meter_number: "",
       email: "",
-      phone_code: "",  // Changed from undefined to empty string
+      phone_code: undefined,
       phone: "",
       address: "",
       sgc: "",
@@ -150,23 +119,14 @@ export default function MetersPage() {
       key_revision_number: "",
       meter_type: "electricity",
     },
-    mode: "onSubmit",  // Add this to ensure validation on submit
   });
 
   useEffect(() => {
     if (selectedOrganization?.country) {
-      const orgCountryName = selectedOrganization.country;
-      const countryName = Object.keys(countries).find(
-        (name) => name.toLowerCase() === orgCountryName.toLowerCase()
-      );
-
-      if (countryName) {
-        const code = countries[countryName as keyof typeof countries];
-        setCountry({ name: countryName, code });
-        form.setValue("phone_code", code, {
-          shouldValidate: true,
-          shouldDirty: true,
-        });
+      const country = selectedOrganization.country.toLowerCase() as keyof typeof countryToPhoneCode;
+      const code = countryToPhoneCode[country];
+      if (code) {
+        form.setValue("phone_code", code);
       }
     }
   }, [selectedOrganization, form]);
@@ -174,7 +134,6 @@ export default function MetersPage() {
   const onSubmit = async (values: TCreateMeterSchema) => {
     if (!selectedOrganization) return;
     setIsSubmitting(true);
-    console.log('Form values:', values); // Add debug logging
     try {
       await createMeter(selectedOrganization.uuid, values);
       toast({
@@ -231,8 +190,6 @@ export default function MetersPage() {
   };
 
   const meters = metersResponse?.results || [];
-  const metersNoPagination = metersNoPaginationResponse || [];
-  console.log('Meters:', metersNoPagination); // Debug log to check meters data
 
   const filteredMeters = meters.filter(meter =>
     meter.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -267,8 +224,7 @@ export default function MetersPage() {
             Manage all meters across your organization.
           </p>
         </div>
-        {/* Future Implementation */}
-        {/* <div className="flex gap-2">
+        <div className="flex gap-2">
           <Button variant="outline" size="sm">
             <Upload className="mr-2 h-4 w-4" />
             Bulk Import
@@ -277,7 +233,7 @@ export default function MetersPage() {
             <Plus className="mr-2 h-4 w-4" />
             Add Meter
           </Button>
-        </div> */}
+        </div>
       </div>
 
       <div className="flex md:grid md:gap-4 md:grid-cols-2 lg:grid-cols-4 overflow-x-auto snap-x snap-mandatory space-x-4 md:space-x-0 pb-4">
@@ -300,7 +256,7 @@ export default function MetersPage() {
           </CardHeader>
           <CardContent>
             <div className="text-lg sm:text-2xl font-bold">
-              {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : metersNoPagination.filter(m => m.meter_type === 'electricity').length}
+              {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : meters.filter(m => m.meter_type === 'electricity').length}
             </div>
             <p className="text-xs text-muted-foreground">
               Active electricity meters
@@ -314,7 +270,7 @@ export default function MetersPage() {
           </CardHeader>
           <CardContent>
             <div className="text-lg sm:text-2xl font-bold">
-              {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : metersNoPagination.filter(m => m.meter_type === 'water').length}
+              {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : meters.filter(m => m.meter_type === 'water').length}
             </div>
             <p className="text-xs text-muted-foreground">
               Active water meters
@@ -328,7 +284,7 @@ export default function MetersPage() {
           </CardHeader>
           <CardContent>
             <div className="text-lg sm:text-2xl font-bold">
-              {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : metersNoPagination.filter(m => m.meter_type === 'gas').length}
+              {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : meters.filter(m => m.meter_type === 'gas').length}
             </div>
             <p className="text-xs text-muted-foreground">
               Active gas meters
@@ -550,14 +506,13 @@ export default function MetersPage() {
                           <FormLabel className="text-xs sm:text-sm">Phone</FormLabel>
                           <FormControl>
                             <PhoneInput
+                              placeholder="812 345 6789"
                               {...field}
-                              placeholder="Enter phone number"
-                              countryName={country.name}
-                              countryCode={country.code}
-                              onCountryChange={(selectedCountry) => {
-                                setCountry(selectedCountry);
-                                form.setValue("phone_code", selectedCountry.code);
-                              }}
+                              countryName={form.watch("phone_code")?.name || ""}
+                              countryCode={form.watch("phone_code")?.code || ""}
+                              onCountryChange={(country) =>
+                                form.setValue("phone_code", country)
+                              }
                             />
                           </FormControl>
                           <FormMessage />

@@ -37,7 +37,9 @@ import {
 } from "@/services/api";
 import { useToast } from "@/components/ui/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useAuth } from "@/context/AuthContext";
+// import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/hooks/useAuth";
+
 import { useOrganizations } from "@/hooks/useOrganizations";
 import {
   Table,

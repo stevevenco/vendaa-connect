@@ -26,6 +26,7 @@ import {
   TCreateApiKeySchema,
   UtilityCost,
   PaginatedResponse,
+  NonPaginatedResponse,
 } from "@/types";
 import { UtilityVend } from "@/types/dashboard";
 import stagingCountriesData from "@/data/countries_staging.json"
@@ -333,11 +334,47 @@ export const getTransactions = (organizationId: string, page: number = 1, pageSi
   return authApi<PaginatedResponse<Transaction>>(url);
 };
 
-export const getUtilityVends = (orgId: string): Promise<UtilityVend[]> => {
-  return authApi<UtilityVend[]>(`/organizations/${orgId}/utility-vends/`);
+export const getAllTransactions = (organizationId: string): Promise<Transaction[]> => {
+  const url = `/wallet/transactions/${organizationId}/?no_pagination=true`;
+  return authApi<Transaction[]>(url);
+};
+
+export const getWalletTransaction = (organizationId: string, transactionId: string): Promise<Transaction> => {
+  return authApi<Transaction>(`/wallet/transactions/${organizationId}/${transactionId}/`);
+};
+
+export const getUtilityVends = (
+  orgId: string,
+  page: number = 1,
+  pageSize: number = 10,
+  tokenType?: string | string[]
+): Promise<PaginatedResponse<UtilityVend>> => {
+  let url = `/organizations/${orgId}/utility-vends/?page=${page}&page_size=${pageSize}`;
+  if (tokenType) {
+    if (Array.isArray(tokenType)) {
+      if (tokenType.length > 0) {
+        url += `&token_type=${tokenType.join(',')}`;
+      }
+    } else {
+      url += `&token_type=${tokenType}`;
+    }
+  }
+  return authApi<PaginatedResponse<UtilityVend>>(url);
+};
+
+export const getUtilityVendDetails = (orgId: string, vendId: string): Promise<UtilityVend> => {
+  return authApi<UtilityVend>(`/organizations/${orgId}/utility-vends/${vendId}/`);
+};
+
+export const getAllUtilityVends = (orgId: string): Promise<UtilityVend[]> => {
+  return authApi<UtilityVend[]>(`/organizations/${orgId}/utility-vends/?no_pagination=true`);
 };
 
 // Meter Related Endpoints
+export const getMetersNoPagination = (orgId: string): Promise<Meter[]> => {
+  return authApi<Meter[]>(`/organizations/${orgId}/meters/?no_pagination=true`);
+};
+
 export const getMeters = (orgId: string, page: number = 1, pageSize: number = 10): Promise<PaginatedResponse<Meter>> => {
   return authApi<PaginatedResponse<Meter>>(`/organizations/${orgId}/meters/?page=${page}&page_size=${pageSize}`);
 };
