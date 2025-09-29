@@ -37,7 +37,7 @@ const STAGING_API_URL: string = import.meta.env.VITE_STAGING_API_URL || "https:/
 const PRODUCTION_API_URL: string = import.meta.env.VITE_PRODUCTION_API_URL || "https://api.example.com";
 const API_VERSION: string = import.meta.env.VITE_API_VERSION || "api/v1";
 
-const env: string = import.meta.env.VITE_ENV || "development";
+const env: string = import.meta.env.VITE_ENV || "staging";
 
 let API_URL: string = "";
 // export const COUNTRY_DATA;
