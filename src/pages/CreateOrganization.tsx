@@ -56,7 +56,8 @@ export default function CreateOrganizationPage() {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    const loadedCountries = Object.entries(COUNTRY_DATA).map(
+    const countryData = COUNTRY_DATA();
+    const loadedCountries = Object.entries(countryData).map(
       ([name, uuid]) => ({
         name: name
           .split(" ")
