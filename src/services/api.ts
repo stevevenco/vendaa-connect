@@ -43,16 +43,20 @@ console.log("Current Environment:", env);
 let API_URL: string = "";
 // export const COUNTRY_DATA;
 
+// export const COUNTRY_DATA = () => {
+//   if (env === "development") {
+//     // return localCountriesData;
+//     return stagingCountriesData;
+//   } else if (env === "staging") {
+//     return stagingCountriesData;
+//   } else {
+//     // return localCountriesData;
+//     return stagingCountriesData
+//   }
+// };
+
 export const COUNTRY_DATA = () => {
-  if (env === "development") {
-    // return localCountriesData;
-    return stagingCountriesData;
-  } else if (env === "staging") {
-    return stagingCountriesData;
-  } else {
-    // return localCountriesData;
-    return stagingCountriesData
-  }
+  return stagingCountriesData;
 };
 
 if (env === "development") {
