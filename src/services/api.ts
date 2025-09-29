@@ -38,13 +38,15 @@ const PRODUCTION_API_URL: string = import.meta.env.VITE_PRODUCTION_API_URL || "h
 const API_VERSION: string = import.meta.env.VITE_API_VERSION || "api/v1";
 
 const env: string = import.meta.env.VITE_ENV || "staging";
+console.log("Current Environment:", env);
 
 let API_URL: string = "";
 // export const COUNTRY_DATA;
 
 export const COUNTRY_DATA = () => {
   if (env === "development") {
-    return localCountriesData;
+    // return localCountriesData;
+    return stagingCountriesData;
   } else if (env === "staging") {
     return stagingCountriesData;
   } else {
