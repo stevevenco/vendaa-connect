@@ -58,7 +58,8 @@ export const TopUpModal = () => {
         parseFloat(amount)
       );
 
-      if (selectedOrganization.is_sandbox || user?.display_state === "test") {
+      // selectedOrganization.is_sandbox || 
+      if (user?.display_state === "test") {
         setIsSuccessModalOpen(true);
       } else {
         setPaymentOptions(options);

@@ -339,6 +339,10 @@ export const getAllTransactions = (organizationId: string): Promise<Transaction[
   return authApi<Transaction[]>(url);
 };
 
+export const getWalletTransaction = (organizationId: string, transactionId: string): Promise<Transaction> => {
+  return authApi<Transaction>(`/wallet/transactions/${organizationId}/${transactionId}/`);
+};
+
 export const getUtilityVends = (
   orgId: string,
   page: number = 1,

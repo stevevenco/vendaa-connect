@@ -55,7 +55,7 @@ export default function MeterSearch({
             ? meters.find((meter) => meter.meter_number === selectedMeter)
                 ?.meter_number
             : loading
-            ? "Loading meters..."
+            ? "No meters..."
             : "Select meter..."}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
@@ -63,7 +63,7 @@ export default function MeterSearch({
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
         <Command>
           <CommandInput
-            placeholder="Search meter by number, name, address..."
+            placeholder="Search meter by number..."
             value={searchTerm}
             onValueChange={setSearchTerm}
           />

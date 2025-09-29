@@ -1,19 +1,19 @@
 import { useState, useEffect } from "react";
 import { useOrganization } from "@/context/useOrganization";
-import { getAllTransactions, getAllUtilityVends, getUtilityVends } from "@/services/api";
-import { PaginatedResponse, UtilityVend } from "@/types";
+import { getAllTransactions, getAllUtilityVends, getUtilityVends, getTransactions } from "@/services/api";
+import { PaginatedResponse, UtilityVend, Transaction } from "@/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
 } from "@/components/ui/table";
 import {
   Pagination,
@@ -23,9 +23,10 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { VendingDetailsModal } from "@/components/VendingDetailsModal";
-import { 
-  FileText, 
-  Download, 
+import { WalletTransactionDetailsModal } from "@/components/WalletTransactionDetailsModal";
+import {
+  FileText,
+  Download,
   Filter,
   BarChart3,
   Activity,
@@ -51,6 +52,14 @@ export default function ReportsPage() {
   const [engineeringTokensThisMonth, setEngineeringTokensThisMonth] = useState(0);
   const [managementTokensThisMonth, setManagementTokensThisMonth] = useState(0);
   const [creditTokensThisMonth, setCreditTokensThisMonth] = useState(0);
+
+  // New state for wallet transactions
+  const [walletTransactions, setWalletTransactions] = useState<PaginatedResponse<Transaction> | null>(null);
+  const [isWalletTransactionsLoading, setIsWalletTransactionsLoading] = useState(true);
+  const [walletTransactionsError, setWalletTransactionsError] = useState<string | null>(null);
+  const [currentWalletTransactionPage, setCurrentWalletTransactionPage] = useState(1);
+  const [selectedTransactionId, setSelectedTransactionId] = useState<string | null>(null);
+  const [isWalletDetailsModalOpen, setIsWalletDetailsModalOpen] = useState(false);
 
   useEffect(() => {
     if (selectedOrganization) {
@@ -181,8 +190,26 @@ export default function ReportsPage() {
   const [managementTokensError, setManagementTokensError] = useState<string | null>(null);
   const [currentManagementTokensPage, setCurrentManagementTokensPage] = useState(1);
 
+  useEffect(() => {
+    if (selectedOrganization) {
+      const fetchWalletTransactions = async () => {
+        setIsWalletTransactionsLoading(true);
+        setWalletTransactionsError(null);
+        try {
+          const data = await getTransactions(selectedOrganization.uuid, currentWalletTransactionPage, 10);
+          setWalletTransactions(data);
+        } catch (error) {
+          console.error("Failed to fetch wallet transactions:", error);
+          setWalletTransactionsError("Failed to load wallet transactions.");
+        } finally {
+          setIsWalletTransactionsLoading(false);
+        }
+      };
 
-  const walletTransactions = dummyTransactions.filter(t => t.type === 'wallet_topup');
+      fetchWalletTransactions();
+    }
+  }, [selectedOrganization, currentWalletTransactionPage]);
+
 
   useEffect(() => {
     if (selectedOrganization) {
@@ -365,7 +392,7 @@ export default function ReportsPage() {
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="month" tick={{ fontSize: 12 }} />
                       <YAxis tick={{ fontSize: 12 }} />
-                      <Tooltip 
+                      <Tooltip
                         formatter={(value: number) => [`₦${value.toLocaleString()}`, 'Amount']}
                       />
                       <Bar dataKey="amount" fill="hsl(var(--primary))" />
@@ -407,9 +434,9 @@ export default function ReportsPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-base sm:text-lg">Recent Credit Transactions</CardTitle>
+                <CardTitle className="text-base sm:text-lg">All Wallet Transactions</CardTitle>
                 <CardDescription className="text-xs sm:text-sm">
-                  Latest utility credit purchases with transaction details
+                  A comprehensive log of all wallet transactions
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -417,53 +444,53 @@ export default function ReportsPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead className="text-xs sm:text-sm">Date/Time</TableHead>
-                      <TableHead className="text-xs sm:text-sm">Meter Number</TableHead>
+                      <TableHead className="text-xs sm:text-sm">Title</TableHead>
                       <TableHead className="text-xs sm:text-sm">Amount</TableHead>
-                      <TableHead className="text-xs sm:text-sm">Token</TableHead>
-                      {/* <TableHead className="text-xs sm:text-sm">Generated By</TableHead> */}
+                      <TableHead className="text-xs sm:text-sm">Status</TableHead>
                       <TableHead className="text-right text-xs sm:text-sm">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {isTransactionsLoading ? (
+                    {isWalletTransactionsLoading ? (
                       <TableRow>
                         <TableCell colSpan={5} className="text-center">Loading transactions...</TableCell>
                       </TableRow>
-                    ) : transactionsError ? (
+                    ) : walletTransactionsError ? (
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center text-red-500">{transactionsError}</TableCell>
+                        <TableCell colSpan={5} className="text-center text-red-500">{walletTransactionsError}</TableCell>
                       </TableRow>
-                    ) : creditTransactions?.results?.length === 0 ? (
+                    ) : walletTransactions?.results?.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center">No credit transactions found.</TableCell>
+                        <TableCell colSpan={5} className="text-center">No wallet transactions found.</TableCell>
                       </TableRow>
                     ) : (
-                      creditTransactions?.results?.map((transaction) => (
-                        <TableRow key={transaction.uuid}>
+                      walletTransactions?.results?.map((transaction) => (
+                        <TableRow key={transaction.transaction_id}>
                           <TableCell className="text-xs sm:text-sm">
                             <div>
                               <div className="font-medium">
-                                {new Date(transaction.created).toLocaleDateString()}
+                                {new Date(transaction.created_at).toLocaleDateString()}
                               </div>
                               <div className="text-xs text-muted-foreground">
-                                {new Date(transaction.created).toLocaleTimeString()}
+                                {new Date(transaction.created_at).toLocaleTimeString()}
                               </div>
                             </div>
                           </TableCell>
-                          <TableCell className="text-xs sm:text-sm">{transaction.meter_number}</TableCell>
+                          <TableCell className="text-xs sm:text-sm">{transaction.title}</TableCell>
                           <TableCell className="text-xs sm:text-sm">
                             <Badge variant="secondary">
                               ₦{parseFloat(transaction.amount).toLocaleString()}
                             </Badge>
                           </TableCell>
-                          <TableCell className="font-mono text-xs">
-                            {transaction.token[0]}
+                          <TableCell className="text-xs sm:text-sm">
+                            <Badge variant={transaction.status === 'success' ? 'success' : ''}>
+                              {transaction.status}
+                            </Badge>
                           </TableCell>
-                           {/* <TableCell className="text-xs sm:text-sm">{transaction.initiated_by.substring(0, 8)}...</TableCell> */}
                           <TableCell className="text-right">
                             <Button variant="outline" size="sm" onClick={() => {
-                              setSelectedVend(transaction);
-                              setIsDetailsModalOpen(true);
+                              setSelectedTransactionId(transaction.transaction_id);
+                              setIsWalletDetailsModalOpen(true);
                             }}>
                               View
                             </Button>
@@ -473,7 +500,7 @@ export default function ReportsPage() {
                     )}
                   </TableBody>
                 </Table>
-                 {creditTransactions && creditTransactions.total_pages > 1 && (
+                {walletTransactions && walletTransactions.total_pages > 1 && (
                   <div className="flex justify-center pt-4">
                     <Pagination>
                       <PaginationContent>
@@ -482,14 +509,14 @@ export default function ReportsPage() {
                             href="#"
                             onClick={(e) => {
                               e.preventDefault();
-                              setCurrentTransactionPage(prev => Math.max(prev - 1, 1));
+                              setCurrentWalletTransactionPage(prev => Math.max(prev - 1, 1));
                             }}
-                            className={!creditTransactions.links.previous ? "pointer-events-none opacity-50" : ""}
+                            className={!walletTransactions.links.previous ? "pointer-events-none opacity-50" : ""}
                           />
                         </PaginationItem>
                         <PaginationItem>
                           <span className="text-sm font-medium">
-                            Page {currentTransactionPage} of {creditTransactions.total_pages}
+                            Page {currentWalletTransactionPage} of {walletTransactions.total_pages}
                           </span>
                         </PaginationItem>
                         <PaginationItem>
@@ -497,9 +524,9 @@ export default function ReportsPage() {
                             href="#"
                             onClick={(e) => {
                               e.preventDefault();
-                              setCurrentTransactionPage(prev => Math.min(prev + 1, creditTransactions.total_pages));
+                              setCurrentWalletTransactionPage(prev => Math.min(prev + 1, walletTransactions.total_pages));
                             }}
-                            className={!creditTransactions.links.next ? "pointer-events-none opacity-50" : ""}
+                            className={!walletTransactions.links.next ? "pointer-events-none opacity-50" : ""}
                           />
                         </PaginationItem>
                       </PaginationContent>
@@ -846,7 +873,7 @@ export default function ReportsPage() {
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="month" />
                     <YAxis />
-                    <Tooltip 
+                    <Tooltip
                       formatter={(value: number) => [`₦${value.toLocaleString()}`, 'Amount']}
                     />
                     <Bar dataKey="amount" fill="hsl(var(--primary))" />
@@ -886,9 +913,9 @@ export default function ReportsPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Recent Credit Transactions</CardTitle>
+              <CardTitle>All Wallet Transactions</CardTitle>
               <CardDescription>
-                Latest utility credit purchases with transaction details
+                A comprehensive log of all wallet transactions
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -896,53 +923,55 @@ export default function ReportsPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Date/Time</TableHead>
-                    <TableHead>Meter Number</TableHead>
+                    <TableHead>Title</TableHead>
+                    <TableHead>Event</TableHead>
                     <TableHead>Amount</TableHead>
-                    <TableHead>Token</TableHead>
-                    {/* <TableHead>Generated By</TableHead> */}
+                    <TableHead>Status</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {isTransactionsLoading ? (
+                  {isWalletTransactionsLoading ? (
                     <TableRow>
                       <TableCell colSpan={6} className="text-center">Loading transactions...</TableCell>
                     </TableRow>
-                  ) : transactionsError ? (
+                  ) : walletTransactionsError ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center text-red-500">{transactionsError}</TableCell>
+                      <TableCell colSpan={6} className="text-center text-red-500">{walletTransactionsError}</TableCell>
                     </TableRow>
-                  ) : creditTransactions?.results?.length === 0 ? (
+                  ) : walletTransactions?.results?.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center">No credit transactions found.</TableCell>
+                      <TableCell colSpan={6} className="text-center">No wallet transactions found.</TableCell>
                     </TableRow>
                   ) : (
-                    creditTransactions?.results?.map((transaction) => (
-                      <TableRow key={transaction.uuid}>
+                    walletTransactions?.results?.map((transaction) => (
+                      <TableRow key={transaction.transaction_id}>
                         <TableCell>
                           <div>
                             <div className="font-medium">
-                              {new Date(transaction.created).toLocaleDateString()}
+                              {new Date(transaction.created_at).toLocaleDateString()}
                             </div>
                             <div className="text-sm text-muted-foreground">
-                              {new Date(transaction.created).toLocaleTimeString()}
+                              {new Date(transaction.created_at).toLocaleTimeString()}
                             </div>
                           </div>
                         </TableCell>
-                        <TableCell>{transaction.meter_number}</TableCell>
+                        <TableCell>{transaction.title}</TableCell>
+                        <TableCell>{transaction.event}</TableCell>
                         <TableCell>
                           <Badge variant="secondary">
                             ₦{parseFloat(transaction.amount).toLocaleString()}
                           </Badge>
                         </TableCell>
-                        <TableCell className="font-mono text-sm">
-                          {transaction.token[0]}
+                        <TableCell>
+                          <Badge variant={transaction.status === 'success' ? 'success' : ''}>
+                            {transaction.status}
+                          </Badge>
                         </TableCell>
-                        {/* <TableCell>{transaction.initiated_by.substring(0, 8)}...</TableCell> */}
                         <TableCell className="text-right">
                           <Button variant="outline" size="sm" onClick={() => {
-                            setSelectedVend(transaction);
-                            setIsDetailsModalOpen(true);
+                            setSelectedTransactionId(transaction.transaction_id);
+                            setIsWalletDetailsModalOpen(true);
                           }}>
                             View
                           </Button>
@@ -952,7 +981,7 @@ export default function ReportsPage() {
                   )}
                 </TableBody>
               </Table>
-              {creditTransactions && creditTransactions.total_pages > 1 && (
+              {walletTransactions && walletTransactions.total_pages > 1 && (
                 <div className="flex justify-center pt-4">
                   <Pagination>
                     <PaginationContent>
@@ -961,14 +990,14 @@ export default function ReportsPage() {
                           href="#"
                           onClick={(e) => {
                             e.preventDefault();
-                            setCurrentTransactionPage(prev => Math.max(prev - 1, 1));
+                            setCurrentWalletTransactionPage(prev => Math.max(prev - 1, 1));
                           }}
-                          className={!creditTransactions.links.previous ? "pointer-events-none opacity-50" : ""}
+                          className={!walletTransactions.links.previous ? "pointer-events-none opacity-50" : ""}
                         />
                       </PaginationItem>
                       <PaginationItem>
                         <span className="text-sm font-medium">
-                          Page {currentTransactionPage} of {creditTransactions.total_pages}
+                          Page {currentWalletTransactionPage} of {walletTransactions.total_pages}
                         </span>
                       </PaginationItem>
                       <PaginationItem>
@@ -976,9 +1005,9 @@ export default function ReportsPage() {
                           href="#"
                           onClick={(e) => {
                             e.preventDefault();
-                            setCurrentTransactionPage(prev => Math.min(prev + 1, creditTransactions.total_pages));
+                            setCurrentWalletTransactionPage(prev => Math.min(prev + 1, walletTransactions.total_pages));
                           }}
-                          className={!creditTransactions.links.next ? "pointer-events-none opacity-50" : ""}
+                          className={!walletTransactions.links.next ? "pointer-events-none opacity-50" : ""}
                         />
                       </PaginationItem>
                     </PaginationContent>
@@ -1309,6 +1338,16 @@ export default function ReportsPage() {
           onClose={() => {
             setIsDetailsModalOpen(false);
             setSelectedVend(null);
+          }}
+        />
+      )}
+      {selectedTransactionId && (
+        <WalletTransactionDetailsModal
+          transactionId={selectedTransactionId}
+          isOpen={isWalletDetailsModalOpen}
+          onClose={() => {
+            setIsWalletDetailsModalOpen(false);
+            setSelectedTransactionId(null);
           }}
         />
       )}

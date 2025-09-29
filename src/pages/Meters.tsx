@@ -65,7 +65,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { PhoneInput } from "@/components/ui/phone-input";
-import countryToPhoneCode from "@/data/country_to_phone_code.json";
+import countries from "@/data/country_phone_codes.json";
 
 export default function MetersPage() {
   const { selectedOrganization } = useOrganizations();
@@ -79,6 +79,7 @@ export default function MetersPage() {
   const [activeTab, setActiveTab] = useState("list");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [country, setCountry] = useState({ name: "", code: "" });
 
 
   const [meterToDelete, setMeterToDelete] = useState<Meter | null>(null);
@@ -154,12 +155,17 @@ export default function MetersPage() {
 
   useEffect(() => {
     if (selectedOrganization?.country) {
-      const country = selectedOrganization.country.toLowerCase() as keyof typeof countryToPhoneCode;
-      const code = countryToPhoneCode[country];
-      if (code) {
-        form.setValue("phone_code", code.toString(), {
+      const orgCountryName = selectedOrganization.country;
+      const countryName = Object.keys(countries).find(
+        (name) => name.toLowerCase() === orgCountryName.toLowerCase()
+      );
+
+      if (countryName) {
+        const code = countries[countryName as keyof typeof countries];
+        setCountry({ name: countryName, code });
+        form.setValue("phone_code", code, {
           shouldValidate: true,
-          shouldDirty: true
+          shouldDirty: true,
         });
       }
     }
@@ -545,9 +551,13 @@ export default function MetersPage() {
                           <FormControl>
                             <PhoneInput
                               {...field}
-                              value={field.value || ""}
-                              code={form.watch("phone_code") || ""}
-                              onCodeChange={(code) => form.setValue("phone_code", code)}
+                              placeholder="Enter phone number"
+                              countryName={country.name}
+                              countryCode={country.code}
+                              onCountryChange={(selectedCountry) => {
+                                setCountry(selectedCountry);
+                                form.setValue("phone_code", selectedCountry.code);
+                              }}
                             />
                           </FormControl>
                           <FormMessage />
