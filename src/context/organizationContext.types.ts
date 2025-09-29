@@ -12,8 +12,11 @@ export interface OrganizationContextType {
   transactions: Transaction[];
   transactionsTotalPages: number;
   transactionsCount: number;
-  fetchTransactions: (organizationId: string, page?: number) => void;
+  fetchTransactions: (organizationId: string, page?: number, month?: string | null) => void;
   isTransactionsLoading: boolean;
+  walletActivityTransactions: Transaction[];
+  isWalletActivityTransactionsLoading: boolean;
+  fetchWalletActivityTransactions: (organizationId: string, month: number) => void;
 }
 
 export interface OrganizationProviderProps {

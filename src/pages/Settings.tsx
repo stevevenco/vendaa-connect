@@ -167,15 +167,27 @@ export default function SettingsPage() {
                       </FormItem>
                     )}
                   />
-                   <FormField
+                  <FormField
                     control={profileForm.control}
                     name="phone_number"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Phone Number</FormLabel>
-                        <FormControl>
-                          <Input type="tel" {...field} disabled={isLoading} />
-                        </FormControl>
+                        <div className="flex items-center gap-2">
+                          <Input
+                            value={user?.phone_code || ""}
+                            disabled
+                            className="w-24 bg-muted"
+                          />
+                          <FormControl>
+                            <Input
+                              type="tel"
+                              {...field}
+                              disabled={isLoading}
+                              className="flex-1"
+                            />
+                          </FormControl>
+                        </div>
                         <FormMessage />
                       </FormItem>
                     )}

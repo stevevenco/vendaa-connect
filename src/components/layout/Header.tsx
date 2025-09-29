@@ -10,7 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/context/AuthContext";
 import { useOrganization } from "@/context/useOrganization";
 import { Link } from "react-router-dom";
@@ -19,13 +19,16 @@ import { Label } from "@/components/ui/label";
 import { switchDisplayState } from "@/services/api";
 import { toast } from "sonner";
 import { useState } from "react";
+import { useHeadway } from "@/hooks/useHeadway";
 
-// Function to truncate text longer than 20 characters
+// Truncate utility
 const truncateText = (text: string, maxLength: number = 20) => {
   return text.length > maxLength ? `${text.substring(0, maxLength)}...` : text;
 };
 
 export function Header() {
+  useHeadway(); // load Headway
+
   const { logout, user, checkAuth } = useAuth();
   const {
     organizations,
@@ -33,6 +36,7 @@ export function Header() {
     switchOrganization,
     isLoading,
   } = useOrganization();
+
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSwitchChange = async (checked: boolean) => {
@@ -81,6 +85,7 @@ export function Header() {
               </DropdownMenuContent>
             </DropdownMenu>
           )}
+
           {selectedOrganization && !selectedOrganization.is_verified && (
             <Link to="/verify-organization">
               <Badge variant="destructive" className="text-xs">
@@ -114,11 +119,19 @@ export function Header() {
 
       <div className="flex items-center gap-4">
         {/* Notifications */}
-        <Button variant="ghost" size="sm" className="relative">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="relative"
+          onClick={() => {
+            if ((window as any).HW_widget) {
+              (window as any).HW_widget.open();
+            }
+          }}
+        >
           <Bell className="h-4 w-4" />
-          <Badge className="absolute -top-1 -right-1 h-5 w-5 text-xs bg-primary text-primary-foreground">
-            3
-          </Badge>
+          {/* Headway injects badge here */}
+          <span id="headway-badge" className="absolute -top-1 -right-1"></span>
         </Button>
 
         {/* User Menu */}
@@ -126,13 +139,8 @@ export function Header() {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-8 w-8 rounded-full">
               <Avatar className="h-8 w-8">
-                <AvatarImage
-                  src={`https://avatar.vercel.sh/${user?.email}.png`}
-                  alt={user?.first_name}
-                />
                 <AvatarFallback>
-                  {user?.first_name?.[0]}
-                  {user?.last_name?.[0]}
+                  {user?.first_name?.[0]} {user?.last_name?.[0]}
                 </AvatarFallback>
               </Avatar>
             </Button>
@@ -149,9 +157,11 @@ export function Header() {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <User className="mr-2 h-4 w-4" />
-              <span>Profile</span>
+            <DropdownMenuItem asChild>
+              <Link to="/settings">
+                <User className="mr-2 h-4 w-4" />
+                <span>Profile</span>
+              </Link>
             </DropdownMenuItem>
             <DropdownMenuItem onClick={logout}>
               <LogOut className="mr-2 h-4 w-4" />
