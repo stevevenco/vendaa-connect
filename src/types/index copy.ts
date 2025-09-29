@@ -289,7 +289,10 @@ const BaseCreateMeterSchema = z.object({
     .regex(/^\d+$/, "Meter number must contain only digits")
     .min(1, "Meter number is required"),
   email: z.string().email("Invalid email address"),
-  phone_code: z.string().min(1, "Country code is required when phone number is provided").optional(),
+  phone_code: z.object({
+    name: z.string(),
+    code: z.string()
+  }).optional(),
   phone: z.string().min(1, "Phone number is required"),
   address: z.string().min(1, "Address is required"),
   sgc: z
@@ -314,14 +317,13 @@ const BaseCreateMeterSchema = z.object({
 
 export const CreateMeterSchema = BaseCreateMeterSchema.refine(
   (data) => {
-    // If phone number is provided, phone code must also be provided
-    if (data.phone && data.phone.trim() !== "") {
-      return data.phone_code !== undefined && data.phone_code.trim() !== "";
+    if (data.phone && !data.phone_code) {
+      return false;
     }
     return true;
   },
   {
-    message: "Country code is required when phone number is provided",
+    message: "Country code is required",
     path: ["phone_code"],
   }
 );

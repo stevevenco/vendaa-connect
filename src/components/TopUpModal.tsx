@@ -21,7 +21,9 @@ import {
   OnlineCheckoutPaymentOption,
 } from "@/types";
 import { initiateWalletFunding } from "@/services/api";
-import { useAuth } from "@/context/AuthContext";
+// import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/hooks/useAuth";
+
 
 export const TopUpModal = () => {
   const { isModalOpen, closeModal } = useTopUp();

@@ -10,9 +10,10 @@ interface AuthContextType {
   isLoading: boolean;
   login: (accessToken: string, refreshToken: string) => Promise<void>;
   logout: () => void;
+  checkAuth: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const queryClient = useQueryClient();
@@ -57,6 +58,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     queryClient.invalidateQueries({ queryKey: ["user"] });
   }, [queryClient]);
 
+  const checkAuth = useCallback(async () => {
+    // Invalidate both user and organization queries to refresh all relevant data
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["user"] }),
+      queryClient.invalidateQueries({ queryKey: ["organizations"] }),
+      queryClient.invalidateQueries({ queryKey: ["selectedOrganization"] }),
+    ]);
+    // Force a page reload to ensure all components get the updated state
+    window.location.reload();
+  }, [queryClient]);
+
   return (
     <AuthContext.Provider
       value={{
@@ -66,6 +78,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         isLoading,
         login,
         logout,
+        checkAuth,
       }}
     >
       {children}
@@ -73,10 +86,4 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return context;
-};
+

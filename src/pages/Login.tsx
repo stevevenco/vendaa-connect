@@ -21,7 +21,9 @@ import { Input } from "@/components/ui/input";
 import { TLoginSchema, LoginSchema } from "@/types";
 import { login as apiLogin } from "@/services/api";
 import { useToast } from "@/components/ui/use-toast";
-import { useAuth } from "@/context/AuthContext";
+// import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/hooks/useAuth";
+
 
 export default function LoginPage() {
   const navigate = useNavigate();
