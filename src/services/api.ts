@@ -38,6 +38,7 @@ const PRODUCTION_API_URL: string = import.meta.env.VITE_PRODUCTION_API_URL || "h
 const API_VERSION: string = import.meta.env.VITE_API_VERSION || "api/v1";
 
 const env: string = import.meta.env.VITE_ENV || "staging";
+console.log("Current Environment:", env);
 
 let API_URL: string = "";
 // export const COUNTRY_DATA;

@@ -35,10 +35,10 @@ import {
   TCreateOrganizationSchema,
   CreateOrganizationSchema,
 } from "@/types";
-import { createOrganization } from "@/services/api";
+import { COUNTRY_DATA, createOrganization } from "@/services/api";
 import { useToast } from "@/components/ui/use-toast";
 import { useEffect, useState } from "react";
-import countriesData from "@/data/countries.json";
+// import countriesData from "@/data/countries.json";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
@@ -56,7 +56,7 @@ export default function CreateOrganizationPage() {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    const loadedCountries = Object.entries(countriesData).map(
+    const loadedCountries = Object.entries(COUNTRY_DATA).map(
       ([name, uuid]) => ({
         name: name
           .split(" ")
