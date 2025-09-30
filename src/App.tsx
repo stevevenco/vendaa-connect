@@ -25,6 +25,7 @@ import AcceptInvitePage from "./pages/AcceptInvite";
 import ResetPasswordPage from "./pages/ResetPassword";
 import VerifyAccountPage from "./pages/VerifyAccount";
 import VerifyOrganization from "./pages/VerifyOrganization";
+import VerificationFlowRoute from "./components/VerificationFlowRoute";
 
 const App = () => (
   <TooltipProvider>
@@ -37,7 +38,9 @@ const App = () => (
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/verify-otp" element={<VerifyOtpPage />} />
-          <Route path="/verify-account" element={<VerifyAccountPage />} />
+          <Route element={<VerificationFlowRoute />}>
+            <Route path="/verify-account" element={<VerifyAccountPage />} />
+          </Route>
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/accept-invite/:token" element={<AcceptInvitePage />} />
           <Route

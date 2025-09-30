@@ -27,12 +27,41 @@ import {
 } from "@/components/ui/input-otp";
 // import { useAuth } from "@/context/AuthContext";
 import { useAuth } from "@/hooks/useAuth";
+import { useCallback, useEffect } from "react";
 
 
 export default function VerifyAccountPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user, checkAuth } = useAuth();
+
+  const sendOtp = useCallback(
+    async (isResend = false) => {
+      if (!user?.email) return;
+      try {
+        await requestOtp({
+          email: user.email,
+          purpose: "account_verification",
+        });
+        toast({
+          title: isResend ? "OTP Resent" : "OTP Sent",
+          description: "A new OTP has been sent to your email.",
+        });
+      } catch (error) {
+        toast({
+          title: "Error",
+          description:
+            error instanceof Error ? error.message : "An error occurred.",
+          variant: "destructive",
+        });
+      }
+    },
+    [user?.email, toast]
+  );
+
+  useEffect(() => {
+    sendOtp();
+  }, [sendOtp]);
 
   const form = useForm<TOtpVerifySchema>({
     resolver: zodResolver(
@@ -63,26 +92,7 @@ export default function VerifyAccountPage() {
     }
   };
 
-  const handleResendOtp = async () => {
-    if (!user?.email) return;
-    try {
-      await requestOtp({
-        email: user.email,
-        purpose: "account_verification",
-      });
-      toast({
-        title: "OTP Resent",
-        description: "A new OTP has been sent to your email.",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description:
-          error instanceof Error ? error.message : "An error occurred.",
-        variant: "destructive",
-      });
-    }
-  };
+  const handleResendOtp = () => sendOtp(true);
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-950">
