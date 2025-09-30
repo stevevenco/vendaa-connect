@@ -47,6 +47,7 @@ interface Country {
   name: string;
   uuid: string;
 }
+const countryData = COUNTRY_DATA();
 
 export default function CreateOrganizationPage() {
   const navigate = useNavigate();
@@ -56,7 +57,6 @@ export default function CreateOrganizationPage() {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    const countryData = COUNTRY_DATA();
     const loadedCountries = Object.entries(countryData).map(
       ([name, uuid]) => ({
         name: name
