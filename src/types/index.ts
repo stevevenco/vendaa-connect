@@ -91,7 +91,7 @@ export const RequestOtpSchema = z.object({
   email: z.string().email({
     message: "Please enter a valid email address.",
   }),
-  purpose: z.enum(["signup", "password_reset"]),
+  purpose: z.enum(["signup", "password_reset", "account_verification"]),
 });
 
 export type TRequestOtpSchema = z.infer<typeof RequestOtpSchema>;
@@ -101,7 +101,7 @@ export const OtpVerifySchema = z.object({
   otp_code: z.string().min(6, {
     message: "OTP must be 6 characters long.",
   }),
-  purpose: z.enum(["signup", "password_reset"]),
+  purpose: z.enum(["signup", "password_reset", "account_verification"]),
   new_password: z.string().min(8, {
     message: "Password must be at least 8 characters long.",
   }).optional(),
