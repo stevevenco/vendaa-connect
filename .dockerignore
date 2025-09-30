@@ -1,0 +1,19 @@
+# Ignore dependencies
+node_modules/
+
+# Ignore build output
+dist/
+
+# Ignore development-specific files
+.env
+.eslint.config.js
+.gitignore
+Dockerfile.dev
+Dockerfile.staging
+Dockerfile.prod
+README.md
+
+# Ignore logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
