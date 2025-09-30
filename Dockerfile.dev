@@ -1,0 +1,22 @@
+# Use a specific Node.js version for consistency
+FROM node:20-alpine
+
+# Set the working directory in the container
+WORKDIR /app
+
+# Copy package.json and package-lock.json to leverage Docker cache
+COPY package.json package-lock.json* ./
+
+# Install dependencies
+# Use --no-optional to speed up install and reduce image size
+RUN npm install --no-optional
+
+# Copy the rest of the application source code
+COPY . .
+
+# Expose the port the Vite development server will run on
+EXPOSE 8080
+
+# Start the Vite development server
+# The --host flag makes the server accessible from outside the container
+CMD ["npm", "run", "dev", "--", "--host"]
